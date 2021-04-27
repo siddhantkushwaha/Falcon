@@ -1,8 +1,9 @@
 import os.path
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
+
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
 
 from params import project_root_dir
 
@@ -53,9 +54,11 @@ class Gmail:
                 self.credentials = flow.run_local_server(port=0)
 
         authenticated_email = self.get_email()
-        if os.path.exists(tokens_path) and email != authenticated_email:
-            # clear the tokens since they most likely tinkered with
-            os.remove(tokens_path)
+        if email != authenticated_email:
+
+            if os.path.exists(tokens_path):
+                # clear the tokens since they most likely tinkered with
+                os.remove(tokens_path)
 
             raise Exception(f'Requested email [{email}] does not match authenticated email [{authenticated_email}].')
         else:
@@ -73,8 +76,6 @@ class Gmail:
         os.environ['OAUTHLIB_RELAX_TOKEN_SCOPE'] = '1'
 
         method = method.lower()
-
-        credentials = None
         if method == 'desktop':
             self.__desktop_auth(email)
         elif method == 'web':
@@ -82,3 +83,12 @@ class Gmail:
 
     def get_email(self):
         return self.userinfo_service.userinfo().get().execute()['email']
+
+    def list_labels(self):
+        return self.gmail_service.users().labels().list(userId='me').execute()
+
+    def get_label(self, label_id):
+        return self.gmail_service.users().labels().get(userId='me', id=label_id).execute()
+
+    def create_label(self, label):
+        return self.gmail_service.users().labels().create(userId='me', body=label).execute()
