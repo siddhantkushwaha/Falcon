@@ -23,8 +23,6 @@ class Falcon:
         preexisting_labels = self.gmail.list_labels()
         preexisting_label_names = set([i['name'] for i in preexisting_labels['labels']])
 
-        print(preexisting_label_names)
-
         for label_name in labels:
             if label_name not in preexisting_label_names:
                 label_body = {
