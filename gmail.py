@@ -93,7 +93,12 @@ class Gmail:
     def create_label(self, label):
         return self.gmail_service.users().labels().create(userId='me', body=label).execute()
 
-    def list_mails(self, query=None, max_pages=10, include_spam_and_trash=False):
+    def list_mails(
+            self,
+            query=None,
+            max_pages=10,
+            include_spam_and_trash=False
+    ):
         messages = []
 
         page_num = 1
@@ -129,6 +134,6 @@ class Gmail:
 
 
 if __name__ == '__main__':
-    email = 'isiddhant.k@gmail.com'
+    email = 'example@gmail.com'
     gmail = Gmail()
     gmail.auth(email, method='Desktop')

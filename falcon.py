@@ -69,18 +69,21 @@ class Falcon:
             print(f'Modified mail listing query [{query}]')
 
         # do my thing with mails
-        mails = self.gmail.list_mails(query=query, max_pages=100, include_spam_and_trash=True)
+        mails = self.gmail.list_mails(query=query, max_pages=10000, include_spam_and_trash=True)
         print(f'Number of mails for [{self.email}] : [{len(mails)}].')
 
         for index, mail in enumerate(mails, 0):
             mail_id = mail['id']
             thread_id = mail['threadId']
 
+            mail_path = os.path.join(base_dir, thread_id, mail_id, 'mail.json')
+            if os.path.exists(mail_path):
+                print(f'Skipping mail #[{index}], Id [{mail_id}], ThreadId [{thread_id}].')
+                continue
+
             print(f'Mail #[{index}], Id [{mail_id}], ThreadId [{thread_id}].')
 
             mail_body = self.gmail.get_mail(mail_id)
-
-            mail_path = os.path.join(base_dir, thread_id, mail_id, 'mail.json')
 
             os.makedirs(os.path.dirname(mail_path), exist_ok=True)
             with open(mail_path, 'w') as fp:
@@ -96,7 +99,11 @@ class Falcon:
 
 
 if __name__ == '__main__':
-    emails = ['isiddhant.k@gmail.com', 'k16.siddhant@gmail.com']
+    emails = [
+        'isiddhant.k@gmail.com',
+        'k16.siddhant@gmail.com',
+        'siddhant.k16@iiits.in'
+    ]
     for em in emails:
         falcon = Falcon(email=em)
 
