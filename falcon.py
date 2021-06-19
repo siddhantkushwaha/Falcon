@@ -1,10 +1,18 @@
+import json
+import os
+import pickle
+import time
+from datetime import datetime
+
 from gmail import Gmail
+from params import project_root_dir
 
 
 class Falcon:
     def __init__(self, email):
+        self.email = email
         self.gmail = Gmail()
-        self.gmail.auth(email, method='Desktop')
+        self.gmail.auth(self.email, method='Desktop')
 
     def create_labels(self):
         """
@@ -42,7 +50,55 @@ class Falcon:
                 response = self.gmail.create_label(label_body)
                 print(response)
 
+    def save_mails(self):
+        start_time = datetime.now()
+        base_dir = os.path.join(project_root_dir, 'data', self.email)
+
+        # load state file
+        state_file_path = os.path.join(base_dir, 'state.pickle')
+        os.makedirs(os.path.dirname(state_file_path), exist_ok=True)
+        state = {}
+        if os.path.exists(state_file_path):
+            with open(state_file_path, 'rb') as fp:
+                state = pickle.load(fp)
+
+        query = None
+        last_modified_date = state.get('lastModifiedDate', None)
+        if last_modified_date is not None:
+            query = f"after:{last_modified_date.strftime('%Y/%m/%d')}"
+            print(f'Modified mail listing query [{query}]')
+
+        # do my thing with mails
+        mails = self.gmail.list_mails(query=query, max_pages=100, include_spam_and_trash=True)
+        print(f'Number of mails for [{self.email}] : [{len(mails)}].')
+
+        for index, mail in enumerate(mails, 0):
+            mail_id = mail['id']
+            thread_id = mail['threadId']
+
+            print(f'Mail #[{index}], Id [{mail_id}], ThreadId [{thread_id}].')
+
+            mail_body = self.gmail.get_mail(mail_id)
+
+            mail_path = os.path.join(base_dir, thread_id, mail_id, 'mail.json')
+
+            os.makedirs(os.path.dirname(mail_path), exist_ok=True)
+            with open(mail_path, 'w') as fp:
+                json.dump(mail_body, fp)
+
+            # Avoid too many api hits
+            time.sleep(0.2)
+
+        # update state
+        state['lastModifiedDate'] = start_time
+        with open(state_file_path, 'wb') as fp:
+            pickle.dump(state, fp)
+
 
 if __name__ == '__main__':
-    falcon = Falcon(email='k16.siddhant@gmail.com')
-    falcon.create_labels()
+    emails = ['isiddhant.k@gmail.com', 'k16.siddhant@gmail.com']
+    for em in emails:
+        falcon = Falcon(email=em)
+
+        # Working on building the dataset for training
+        falcon.save_mails()

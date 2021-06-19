@@ -92,3 +92,43 @@ class Gmail:
 
     def create_label(self, label):
         return self.gmail_service.users().labels().create(userId='me', body=label).execute()
+
+    def list_mails(self, query=None, max_pages=10, include_spam_and_trash=False):
+        messages = []
+
+        page_num = 1
+        page_token = None
+        while page_num <= max_pages and (page_num == 1 or page_token is not None):
+            response = self.gmail_service.users().messages().list(
+                userId='me',
+                q=query,
+                pageToken=page_token,
+                includeSpamTrash=include_spam_and_trash
+            ).execute()
+
+            messages_by_page = response['messages']
+            messages.extend(messages_by_page)
+
+            page_token = response.get('nextPageToken', None)
+            page_num += 1
+
+        return messages
+
+    def get_mail(self, mail_id):
+        response = self.gmail_service.users().messages().get(userId='me', id=mail_id).execute()
+
+        payload = response.pop('payload')
+        parts = payload.pop('parts', [])
+
+        payloads = [payload]
+        for part in parts:
+            payloads.append(part)
+
+        response['payloads'] = payloads
+        return response
+
+
+if __name__ == '__main__':
+    email = 'isiddhant.k@gmail.com'
+    gmail = Gmail()
+    gmail.auth(email, method='Desktop')
