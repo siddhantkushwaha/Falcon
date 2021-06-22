@@ -11,8 +11,8 @@ import base64
 import json
 import os
 import re
-from pprint import pprint
 
+import pandas as pd
 from bs4 import BeautifulSoup
 
 import params
@@ -45,9 +45,16 @@ def clean(text):
 
 
 def process():
+    counter = 0
     for pt, mail in get_raw():
+        counter += 1
 
         mail_id = mail['id']
+
+        parse_data_path = os.path.join(params.project_root_dir, 'parsed', f'{mail_id}.json')
+        if os.path.exists(parse_data_path):
+            print(f'Skipping for mail [{mail_id}].')
+            continue
 
         sender = None
         subject = None
@@ -104,6 +111,10 @@ def process():
             else:
                 print(f'Unseen mime-type found [{mime_type}].')
 
+        if any(i in sender for i in ['iiits', 'isiddhant.k@gmail.com', 'k16.siddhant@gmail.com']):
+            print(f'Skipping because of sender [{sender}]')
+            continue
+
         if text is not None:
             text = clean(text)
 
@@ -118,8 +129,32 @@ def process():
             'has_unsubscribe_option': 1 if has_unsubscribe_option else 0,
             'num_files': num_files
         }
-        pprint(mail_data)
+
+        print(f'Parsed for [{mail_id}].')
+        os.makedirs(os.path.dirname(parse_data_path), exist_ok=True)
+        with open(parse_data_path, 'w') as fp:
+            json.dump(mail_data, fp)
+
+    print(f'Total mailed processed [{counter}].')
+
+
+def build():
+    pt = os.path.join(params.project_root_dir, 'dataset')
+    os.makedirs(pt, exist_ok=True)
+
+    mails = []
+    for root, _, files in os.walk(os.path.join(params.project_root_dir, 'parsed')):
+        for file in files:
+            if file.endswith('.json'):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r') as fp:
+                    data = json.load(fp)
+                    mails.append(data)
+
+    df = pd.DataFrame(mails)
+    df.to_csv(os.path.join(pt, 'data.csv'), index=False)
 
 
 if __name__ == '__main__':
-    process()
+    # process()
+    build()
