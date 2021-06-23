@@ -60,7 +60,7 @@ def process():
         subject = None
         text = None
         has_unsubscribe_option = False
-        num_files = 0
+        files = []
 
         for part in mail['payloads']:
 
@@ -83,7 +83,7 @@ def process():
             filename = get_key(part, ['filename'], '')
 
             if len(filename) > 0:
-                num_files += 1
+                files.append(filename)
                 continue
 
             if data is None:
@@ -122,12 +122,12 @@ def process():
             subject = clean(subject)
 
         mail_data = {
-            'id': mail_id,
-            'sender': sender,
-            'subject': subject,
-            'text': text,
-            'has_unsubscribe_option': 1 if has_unsubscribe_option else 0,
-            'num_files': num_files
+            'Id': mail_id,
+            'Sender': sender,
+            'Subject': subject,
+            'Text': text,
+            'Unsubscribe': 1 if has_unsubscribe_option else 0,
+            'Files': files
         }
 
         print(f'Parsed for [{mail_id}].')
@@ -139,22 +139,37 @@ def process():
 
 
 def build():
-    pt = os.path.join(params.project_root_dir, 'dataset')
-    os.makedirs(pt, exist_ok=True)
+    pt = os.path.join(params.project_root_dir, 'dataset', 'data.csv')
+    os.makedirs(os.path.dirname(pt), exist_ok=True)
 
-    mails = []
+    mails = dict()
+    if os.path.exists(pt):
+        df = pd.read_csv(pt)
+        for item in df.to_dict(orient='records'):
+            mails[item['Id']] = item
+
     for root, _, files in os.walk(os.path.join(params.project_root_dir, 'parsed')):
         for file in files:
             if file.endswith('.json'):
                 file_path = os.path.join(root, file)
                 with open(file_path, 'r') as fp:
-                    data = json.load(fp)
-                    mails.append(data)
+                    item = json.load(fp)
 
-    df = pd.DataFrame(mails)
-    df.to_csv(os.path.join(pt, 'data.csv'), index=False)
+                    old_item = mails.get(item['Id'], None)
+                    if old_item is not None:
+                        mail_type = old_item.get('Type', None)
+                        if mail_type is not None:
+                            item['Type'] = mail_type
+
+                    mails[item['Id']] = item
+
+    df = pd.DataFrame(mails.values())
+    df.to_csv(os.path.join(pt), index=False)
 
 
 if __name__ == '__main__':
+    # -- parse data fetched from api --
     # process()
+
+    # -- build csv --
     build()
