@@ -124,7 +124,7 @@ def process():
             subject = clean(subject)
 
         mail_data = {
-            'Id': mail_id,
+            'Id': str(mail_id),
             'Sender': sender,
             'Subject': subject,
             'Text': text,
@@ -158,11 +158,8 @@ def build():
                 with open(file_path, 'r') as fp:
                     item = json.load(fp)
 
-                    old_item = mails.get(item['Id'], None)
-                    if old_item is not None:
-                        mail_type = old_item.get('Type', None)
-                        if mail_type is not None:
-                            item['Type'] = mail_type
+                    old_item = mails.get(item['Id'], {})
+                    item['Type'] = old_item.get('Type', None)
 
                     mails[item['Id']] = item
 
@@ -172,7 +169,7 @@ def build():
 
 if __name__ == '__main__':
     # -- parse data fetched from api --
-    process()
+    # process()
 
     # -- build csv --
     build()
