@@ -34,14 +34,16 @@ def clean(text):
     for word in text.split(' '):
         if any(ch.isdigit() or ch in checklist for ch in word):
             clean_text.append('#')
-            continue
-        clean_text.append(word)
+        else:
+            clean_text.append(word)
 
     text = ' '.join(clean_text)
-    text = re.sub(r'[^A-Za-z0-9]', ' ', text)
-    text = re.sub(r'[\s]+', ' ', text)  # remove extra whitespaces
-    text = text.strip().lower()
-    return text
+
+    cleaned = re.sub(r'[^A-Za-z0-9# ]', ' ', text)
+    cleaned = re.sub(r'[\s]+', ' ', cleaned)  # remove extra whitespaces
+    cleaned = cleaned.strip().lower()
+
+    return cleaned
 
 
 def process():
@@ -127,7 +129,8 @@ def process():
             'Subject': subject,
             'Text': text,
             'Unsubscribe': 1 if has_unsubscribe_option else 0,
-            'Files': files
+            'Files': files,
+            'Type': None
         }
 
         print(f'Parsed for [{mail_id}].')
@@ -169,7 +172,7 @@ def build():
 
 if __name__ == '__main__':
     # -- parse data fetched from api --
-    # process()
+    process()
 
     # -- build csv --
     build()
