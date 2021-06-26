@@ -1,4 +1,5 @@
 import os.path
+from queue import Queue
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -122,12 +123,22 @@ class Gmail:
     def get_mail(self, mail_id):
         response = self.gmail_service.users().messages().get(userId='me', id=mail_id).execute()
 
-        payload = response.pop('payload')
-        parts = payload.pop('parts', [])
+        payloads_queue = Queue()
+        payloads_queue.put(response.pop('payload', None))
 
-        payloads = [payload]
-        for part in parts:
-            payloads.append(part)
+        payloads = []
+        while not payloads_queue.empty():
+
+            payload = payloads_queue.get()
+            if payload is None:
+                continue
+
+            # push parts to queue for further processing
+            for part in payload.pop('parts', []):
+                payloads_queue.put(part)
+
+            # this part is done
+            payloads.append(payload)
 
         response['payloads'] = payloads
         return response

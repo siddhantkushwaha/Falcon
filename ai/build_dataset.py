@@ -148,6 +148,8 @@ def build():
     mails = dict()
     if os.path.exists(pt):
         df = pd.read_csv(pt)
+        df.to_csv(os.path.join(os.path.dirname(pt), 'data_backup.csv'), index=False)
+
         for item in df.to_dict(orient='records'):
             mails[item['Id']] = item
 
@@ -164,7 +166,7 @@ def build():
                     mails[item['Id']] = item
 
     df = pd.DataFrame(mails.values())
-    df.to_csv(os.path.join(pt), index=False)
+    df.to_csv(pt, index=False)
 
 
 if __name__ == '__main__':

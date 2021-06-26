@@ -90,7 +90,7 @@ class Falcon:
                 json.dump(mail_body, fp)
 
             # Avoid too many api hits
-            time.sleep(0.2)
+            time.sleep(0.5)
 
         # update state
         state['lastModifiedDate'] = start_time
