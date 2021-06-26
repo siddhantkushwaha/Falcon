@@ -28,18 +28,19 @@ def get_raw():
                     yield file_pt, json.load(fp)
 
 
-def clean(text):
+def clean(text, add_placeholder=True):
     clean_text = []
     checklist = {'@', '.', '/', '\\'}
     for word in text.split(' '):
         if any(ch.isdigit() or ch in checklist for ch in word):
-            clean_text.append('#')
+            if add_placeholder:
+                clean_text.append('0')
         else:
             clean_text.append(word)
 
     text = ' '.join(clean_text)
 
-    cleaned = re.sub(r'[^A-Za-z0-9# ]', ' ', text)
+    cleaned = re.sub(r'[^A-Za-z0-9 ]', ' ', text)
     cleaned = re.sub(r'[\s]+', ' ', cleaned)  # remove extra whitespaces
     cleaned = cleaned.strip().lower()
 
@@ -66,7 +67,7 @@ def process():
 
         for part in mail['payloads']:
 
-            for header in part['headers']:
+            for header in part.get('headers', []):
                 header_name = header['name'].lower()
                 header_value = header['value']
 
@@ -171,7 +172,7 @@ def build():
 
 if __name__ == '__main__':
     # -- parse data fetched from api --
-    # process()
+    process()
 
     # -- build csv --
     build()
