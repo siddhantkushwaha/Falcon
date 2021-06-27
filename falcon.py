@@ -22,10 +22,10 @@ class Falcon:
 
         labels = [
             'Primary',
-            'One Time Passwords',
-            'Transactions',
-            'Updates',
-            'Junk'
+            'Verification',
+            'Update',
+            'Spam',
+            'Transaction'
         ]
 
         preexisting_labels = self.gmail.list_labels()

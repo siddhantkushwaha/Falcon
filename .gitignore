@@ -1,3 +1,9 @@
 data
+config
+dataset
+parsed
+tokens
+model
+
 *.json
 *.csv

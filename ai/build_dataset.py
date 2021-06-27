@@ -10,13 +10,12 @@
 import base64
 import json
 import os
-import re
 
 import pandas as pd
 from bs4 import BeautifulSoup
 
 import params
-from util import get_key
+from util import get_key, clean
 
 
 def get_raw():
@@ -26,25 +25,6 @@ def get_raw():
                 file_pt = os.path.join(root, file)
                 with open(file_pt, 'r') as fp:
                     yield file_pt, json.load(fp)
-
-
-def clean(text, add_placeholder=True):
-    clean_text = []
-    checklist = {'@', '.', '/', '\\'}
-    for word in text.split(' '):
-        if any(ch.isdigit() or ch in checklist for ch in word):
-            if add_placeholder:
-                clean_text.append('0')
-        else:
-            clean_text.append(word)
-
-    text = ' '.join(clean_text)
-
-    cleaned = re.sub(r'[^A-Za-z0-9 ]', ' ', text)
-    cleaned = re.sub(r'[\s]+', ' ', cleaned)  # remove extra whitespaces
-    cleaned = cleaned.strip().lower()
-
-    return cleaned
 
 
 def process():
