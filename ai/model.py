@@ -27,7 +27,8 @@ class Model:
 
     def __get_extensions_str(self, files):
         if files is not None:
-            files = json.loads(files.replace('\'', "\""))
+            if type(files) is str:
+                files = json.loads(files.replace('\'', "\""))
             extensions = list(filter(
                 lambda x: len(x) > 0,
                 map(
@@ -86,7 +87,7 @@ class Model:
 
     def train(
             self,
-            vocab_size=5000,
+            vocab_size=None,
             split_ratio=0.9
     ):
         if self.classes is None:
@@ -197,48 +198,3 @@ class Model:
 
         predictions = self.model.predict(np.array([x]))[0]
         return self.classes[np.argmax(predictions)], predictions
-
-
-def train():
-    pt = os.path.join(params.project_root_dir, 'dataset', 'data.csv')
-    labels = [
-        'primary',
-        'spam',
-        'transaction',
-        'update',
-        'verification'
-    ]
-
-    falcon_model = Model()
-
-    # ------ Training and saving the model ------
-    falcon_model.build_data(labels, pt)
-    falcon_model.train(
-        vocab_size=5000,
-        split_ratio=0.9
-    )
-    falcon_model.save_model()
-
-
-def test():
-    falcon_model = Model()
-    falcon_model.load_model()
-
-    label, probabilities = falcon_model.predict(
-        unsubscribe=False,
-        sender='account-security-noreply@accountprotection.microsoft.com',
-        subject='microsoft account security code',
-        text='microsoft account security code please use the following security code for the microsoft account 0 security code 0 if you don t recognize the microsoft account 0 you can click here to remove your email address from that 0 thanks the microsoft account team',
-        files=None
-    )
-
-    print(label)
-    print(probabilities)
-
-
-if __name__ == '__main__':
-    # run training instructions
-    # train()
-
-    # load model and test
-    test()

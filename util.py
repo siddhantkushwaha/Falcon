@@ -7,7 +7,7 @@ def clean(text):
 
     clean_text = []
     checklist = {'@', '.', '/', '\\'}
-    for word in text.split(' '):
+    for word in str(text).split(' '):
         if any(ch.isdigit() or ch in checklist for ch in word):
             clean_text.append('0')
         else:
