@@ -16,20 +16,20 @@ def train():
         'verification'
     ]
 
-    falcon_model = Model()
+    model = Model()
 
     # ------ Training and saving the model ------
-    falcon_model.build_data(labels, pt)
-    falcon_model.train(
+    model.build_data(labels, pt)
+    model.train(
         vocab_size=5000,
         split_ratio=0.9
     )
-    falcon_model.save_model()
+    model.save_model()
 
 
 def test():
-    falcon_model = Model()
-    falcon_model.load_model()
+    model = Model()
+    model.load_model()
 
     pt = os.path.join(params.project_root_dir, 'dataset', 'data.csv')
     data = pd.read_csv(pt)
@@ -37,7 +37,7 @@ def test():
     count = 0
     for i, row in data.iterrows():
         label_og = row['Type'].lower()
-        label, probabilities = falcon_model.predict(
+        label, probabilities = model.predict(
             unsubscribe=row['Unsubscribe'],
             sender=row['Sender'],
             subject=row['Subject'],
@@ -49,7 +49,7 @@ def test():
             count += 1
             print(count, label, label_og)
             print(row)
-            print(probabilities, falcon_model.classes)
+            print(probabilities, model.classes)
             print()
 
 
