@@ -27,8 +27,8 @@ def train():
     model.save_model()
 
 
-def test():
-    model = Model()
+def test(name='model'):
+    model = Model(name)
     model.load_model()
 
     pt = os.path.join(params.project_root_dir, 'dataset', 'data.csv')
@@ -37,7 +37,7 @@ def test():
     count = 0
     for i, row in data.iterrows():
         label_og = row['Type'].lower()
-        label, probabilities = model.predict(
+        label, probabilities, _ = model.predict(
             unsubscribe=row['Unsubscribe'],
             sender=row['Sender'],
             subject=row['Subject'],

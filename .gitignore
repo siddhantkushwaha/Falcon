@@ -4,6 +4,7 @@ dataset
 parsed
 tokens
 model
+modelinuse
 
 *.json
 *.csv

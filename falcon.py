@@ -1,40 +1,39 @@
 import json
+import logging
 import os
 import pickle
 import time
 from datetime import datetime
+from pprint import pprint
 
+from ai.model import Model
 from gmail import Gmail
 from params import project_root_dir
 
 
-class Falcon:
+class FalconClient:
     def __init__(self, email):
         self.email = email
         self.gmail = Gmail()
         self.gmail.auth(self.email, method='Desktop')
 
-    def create_labels(self):
-        """
-            Creates labels required if not exists.
-            (too keep things simple, create own labels instead of pre-existing labels)
-        """
+        self._labels = None
 
-        labels = [
-            'Primary',
-            'Verification',
-            'Update',
-            'Spam',
-            'Transaction'
-        ]
+    def get_labels(self):
+        if self._labels is None:
+            self._labels = {i['id']: i for i in self.gmail.list_labels()['labels']}
+        return self._labels
 
-        preexisting_labels = self.gmail.list_labels()
-        preexisting_label_names = set([i['name'] for i in preexisting_labels['labels']])
+    def get_label_by_name(self, name):
+        labels_by_name = {i['name']: i for i in self.get_labels().values()}
+        return labels_by_name.get(name, None)
 
-        for label_name in labels:
-            if label_name not in preexisting_label_names:
+    def create_label(self, name):
+        created = False
+        if self.get_label_by_name(name) is None:
+            try:
                 label_body = {
-                    'name': label_name,
+                    'name': name,
                     'type': 'user',
                     'labelListVisibility': 'labelShow',
                     'messageListVisibility': 'show',
@@ -47,10 +46,17 @@ class Falcon:
                         "backgroundColor": '#ffffff',
                     }
                 }
-                response = self.gmail.create_label(label_body)
-                print(response)
 
-    def save_mails(self):
+                label = self.gmail.create_label(label_body)
+                self._labels[label['id']] = label
+
+                created = True
+            except Exception as e:
+                logging.exception(e)
+
+        return created
+
+    def save_mails(self, filter_q):
         start_time = datetime.now()
         base_dir = os.path.join(project_root_dir, 'data', self.email)
 
@@ -62,11 +68,13 @@ class Falcon:
             with open(state_file_path, 'rb') as fp:
                 state = pickle.load(fp)
 
-        query = None
+        query = filter_q if filter_q is not None else ''
         last_modified_date = state.get('lastModifiedDate', None)
         if last_modified_date is not None:
-            query = f"after:{last_modified_date.strftime('%Y/%m/%d')}"
-            print(f'Modified mail listing query [{query}]')
+            query += f" after:{last_modified_date.strftime('%Y/%m/%d')}"
+
+        query = query.strip()
+        print(f'Modified mail listing query [{query}]')
 
         # do my thing with mails
         mails = self.gmail.list_mails(query=query, max_pages=10000, include_spam_and_trash=True)
@@ -98,14 +106,94 @@ class Falcon:
             pickle.dump(state, fp)
 
 
-if __name__ == '__main__':
-    emails = [
-        'isiddhant.k@gmail.com',
-        'k16.siddhant@gmail.com',
-        'siddhant.k16@iiits.in'
-    ]
-    for em in emails:
-        falcon = Falcon(email=em)
+def save():
+    for em, query in emails.items():
+        falcon_client = FalconClient(email=em)
 
         # Working on building the dataset for training
-        falcon.save_mails()
+        falcon_client.save_mails(filter_q=query)
+
+
+def classify_one(model, falcon_client, mail):
+    """
+        Some of the labels can also overlap
+
+        Example 1 - Updates, Newsletters
+        Example 2 - Updates, Invoice
+        etc.
+
+        Ideally we should not overlap spam with anything
+    """
+
+    type_to_label_map = {
+        'primary': 'Primary',
+        'verification': 'Verification',
+        'update': 'Update',
+        'spam': 'Junk',
+        'transaction': 'Transaction',
+        # 'meeting': 'Meeting',
+        # 'newsletter': 'Newsletter',
+        # 'invoice': 'Invoice',
+
+        # 'delivery': 'Delivery',
+        # 'travel': 'Travel',
+    }
+
+    mail_id = mail['Id']
+    mail_type, probabilities, _ = model.predict(
+        unsubscribe=mail['Unsubscribe'],
+        sender=mail['Sender'],
+        subject=mail['Subject'],
+        text=mail['Text'],
+        files=mail['Files']
+    )
+
+    label_name = type_to_label_map.get(mail_type, None)
+    if label_name is not None:
+        falcon_client.create_label(label_name)
+        label_id = falcon_client.get_label_by_name(label_name)['id']
+
+        falcon_client.gmail.add_remove_labels(
+            mail_id,
+            label_ids_add=[label_id],
+            label_ids_remove=None
+        )
+
+    return mail_type
+
+
+def classify():
+    model = Model(name='modelinuse')
+    model.load_model()
+
+    for em, query in emails.items():
+        falcon_client = FalconClient(email=em)
+
+        if query is None:
+            query = ''
+
+        query += ' -has:userlabels'
+        query.strip()
+
+        mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
+
+        for index, mail in enumerate(mails, 0):
+            mail_id = mail['id']
+            mail_processed = falcon_client.gmail.get_mail_processed(mail_id)
+
+            mail_type = classify_one(model, falcon_client, mail_processed)
+            mail_processed['Type'] = mail_type
+
+            print(em)
+            pprint(mail_processed)
+
+            time.sleep(0.5)
+
+            
+if __name__ == '__main__':
+    emails = {
+        'siddhant.k16@iiits.in': '-from:*@iiits.in',
+        'isiddhant.k@gmail.com': None,
+        'k16.siddhant@gmail.com': None
+    }
+    classify()

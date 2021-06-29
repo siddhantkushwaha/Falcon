@@ -16,14 +16,14 @@ import util
 
 class Model:
 
-    def __init__(self):
+    def __init__(self, name='model'):
 
         self.model = None
         self.classes = None
         self.train_data = None
         self.features_ordered = None
 
-        self.model_pt = os.path.join(params.project_root_dir, 'model')
+        self.model_pt = os.path.join(params.project_root_dir, name)
 
     def __get_extensions_str(self, files):
         if files is not None:
@@ -88,7 +88,8 @@ class Model:
     def train(
             self,
             vocab_size=None,
-            split_ratio=0.9
+            split_ratio=0.9,
+            num_epochs=5
     ):
         if self.classes is None:
             print('Classes list is none, did you use parse method before calling train?')
@@ -158,7 +159,7 @@ class Model:
             x=train_x,
             y=train_y,
             batch_size=64,
-            epochs=5,
+            epochs=num_epochs,
             validation_data=(test_x, test_y)
         )
 
@@ -197,4 +198,4 @@ class Model:
         x = x.strip()
 
         predictions = self.model.predict(np.array([x]))[0]
-        return self.classes[np.argmax(predictions)], predictions
+        return self.classes[np.argmax(predictions)], predictions, x
