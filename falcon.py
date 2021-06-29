@@ -189,7 +189,7 @@ def classify():
 
             time.sleep(0.5)
 
-            
+
 if __name__ == '__main__':
     emails = {
         'siddhant.k16@iiits.in': '-from:*@iiits.in',
