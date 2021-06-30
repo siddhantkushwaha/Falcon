@@ -153,7 +153,10 @@ def classify_one(model, falcon_client, mail):
     )
 
     # ------------- put into newsletter label if unsubscribe option found ----------------------------------------------
+
+    files = mail.get('Files', [])
     unsubscribe = mail.get('Unsubscribe', False)
+
     if int(unsubscribe) != 0:
         # If it has option to unsub, demote it to update if above
         if mail_type not in ['spam', 'update']:
@@ -167,8 +170,8 @@ def classify_one(model, falcon_client, mail):
         labels.add(newsletter_label_id)
 
     # ------------- put into meeting label if ics (invite) file attached -----------------------------------------------
-    files = mail.get('Files', [])
-    if 'ics' in files:
+
+    elif 'ics' in files:
         mail_type = 'primary'
 
         meeting_label = type_to_label_map['meeting']
@@ -179,7 +182,7 @@ def classify_one(model, falcon_client, mail):
         labels.add(meeting_label_id)
 
     # ------------- for update mail types if there's a file it's most likely an invoice --------------------------------
-    if len(files) and mail_type == 'update':
+    elif len(files) and mail_type == 'update':
         invoice_label = type_to_label_map['invoice']
         falcon_client.create_label(invoice_label)
 
@@ -217,7 +220,7 @@ def classify():
         if query is None:
             query = ''
 
-        query += ' -has:userlabels'
+        # query += ' -has:userlabels'
         query.strip()
 
         mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
@@ -232,7 +235,7 @@ def classify():
             print(em)
             pprint(mail_processed)
 
-            time.sleep(0.5)
+            # time.sleep(0.5)
 
 
 if __name__ == '__main__':
