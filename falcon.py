@@ -220,7 +220,7 @@ def classify():
         if query is None:
             query = ''
 
-        # query += ' -has:userlabels'
+        query += ' -has:userlabels'
         query.strip()
 
         mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
@@ -235,7 +235,7 @@ def classify():
             print(em)
             pprint(mail_processed)
 
-            # time.sleep(0.5)
+            time.sleep(0.5)
 
 
 if __name__ == '__main__':
