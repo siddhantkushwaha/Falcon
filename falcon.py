@@ -10,6 +10,8 @@ from ai.model import Model
 from gmail import Gmail
 from params import project_root_dir
 
+model = None
+
 
 class FalconClient:
     def __init__(self, email):
@@ -114,6 +116,16 @@ def save():
         falcon_client.save_mails(filter_q=query)
 
 
+def get_model():
+    global model
+
+    if model is None:
+        model = Model(name='modelintest')
+        model.load_model()
+
+    return model
+
+
 def classify_one(model, falcon_client, mail):
     """
         Some of the labels can also overlap
@@ -211,9 +223,6 @@ def classify_one(model, falcon_client, mail):
 
 
 def classify():
-    model = Model(name='modelinuse')
-    model.load_model()
-
     for em, query in emails.items():
         falcon_client = FalconClient(email=em)
 
@@ -229,7 +238,7 @@ def classify():
             mail_id = mail['id']
             mail_processed = falcon_client.gmail.get_mail_processed(mail_id)
 
-            mail_type = classify_one(model, falcon_client, mail_processed)
+            mail_type = classify_one(get_model(), falcon_client, mail_processed)
             mail_processed['Type'] = mail_type
 
             print(em)
