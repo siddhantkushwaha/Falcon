@@ -6,11 +6,26 @@ import time
 from datetime import datetime
 from pprint import pprint
 
+import gmail
 from ai.model import Model
 from gmail import Gmail
 from params import project_root_dir
 
 model = None
+
+type_to_label_map = {
+    'primary': 'Primary',
+    'verification': 'Verification',
+    'update': 'Update',
+    'spam': 'Junk',
+    'transaction': 'Transaction',
+    'meeting': 'Meeting',
+    'newsletter': 'Newsletter',
+    'invoice': 'Invoice',
+
+    # 'delivery': 'Delivery',
+    # 'travel': 'Travel',
+}
 
 
 class FalconClient:
@@ -120,7 +135,7 @@ def get_model():
     global model
 
     if model is None:
-        model = Model(name='modelintest')
+        model = Model(name='modelinuse')
         model.load_model()
 
     return model
@@ -136,20 +151,6 @@ def classify_one(model, falcon_client, mail):
 
         Ideally we should not overlap spam with anything
     """
-
-    type_to_label_map = {
-        'primary': 'Primary',
-        'verification': 'Verification',
-        'update': 'Update',
-        'spam': 'Junk',
-        'transaction': 'Transaction',
-        'meeting': 'Meeting',
-        'newsletter': 'Newsletter',
-        'invoice': 'Invoice',
-
-        # 'delivery': 'Delivery',
-        # 'travel': 'Travel',
-    }
 
     mail_id = mail['Id']
 
@@ -230,13 +231,22 @@ def classify():
             query = ''
 
         query += ' -has:userlabels'
+        query += ' -in:sent'
         query.strip()
 
         mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
 
         for index, mail in enumerate(mails, 0):
             mail_id = mail['id']
-            mail_processed = falcon_client.gmail.get_mail_processed(mail_id)
+
+            mail_full = falcon_client.gmail.get_mail(mail_id)
+
+            # we added a query but keeping this for safety
+            if 'SENT' in mail_full.get('labelIds', []):
+                print('Skip sent mail.')
+                continue
+
+            mail_processed = gmail.process_mail_dic(mail_full)
 
             mail_type = classify_one(get_model(), falcon_client, mail_processed)
             mail_processed['Type'] = mail_type
