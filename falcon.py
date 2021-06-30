@@ -131,15 +131,19 @@ def classify_one(model, falcon_client, mail):
         'update': 'Update',
         'spam': 'Junk',
         'transaction': 'Transaction',
-        # 'meeting': 'Meeting',
-        # 'newsletter': 'Newsletter',
-        # 'invoice': 'Invoice',
+        'meeting': 'Meeting',
+        'newsletter': 'Newsletter',
+        'invoice': 'Invoice',
 
         # 'delivery': 'Delivery',
         # 'travel': 'Travel',
     }
 
     mail_id = mail['Id']
+
+    labels = set()
+
+    # ------------- predict via model -------------
     mail_type, probabilities, _ = model.predict(
         unsubscribe=mail['Unsubscribe'],
         sender=mail['Sender'],
@@ -148,14 +152,55 @@ def classify_one(model, falcon_client, mail):
         files=mail['Files']
     )
 
-    label_name = type_to_label_map.get(mail_type, None)
-    if label_name is not None:
-        falcon_client.create_label(label_name)
-        label_id = falcon_client.get_label_by_name(label_name)['id']
+    # ------------- put into newsletter label if unsubscribe option found -----------
+    unsubscribe = mail.get('Unsubscribe', False)
+    if int(unsubscribe) != 0:
+        # If it has option to unsub, demote it to update if above
+        if mail_type not in ['spam', 'update']:
+            mail_type = 'update'
 
+        newsletter_label = type_to_label_map['newsletter']
+        falcon_client.create_label(newsletter_label)
+
+        newsletter_label_id = falcon_client.get_label_by_name(newsletter_label)['id']
+
+        labels.add(newsletter_label_id)
+
+    # ------------- put into meeting label if ics (invite) file attached -----------
+    files = mail.get('Files', [])
+    if 'ics' in files:
+        mail_type = 'primary'
+
+        meeting_label = type_to_label_map['meeting']
+        falcon_client.create_label(meeting_label)
+
+        meeting_label_id = falcon_client.get_label_by_name(meeting_label)['id']
+
+        labels.add(meeting_label_id)
+
+    # ------------- for update mail types if there's a file it's most likely an invoice -----------
+    if len(files) and mail_type == 'update':
+        invoice_label = type_to_label_map['invoice']
+        falcon_client.create_label(invoice_label)
+
+        invoice_label_id = falcon_client.get_label_by_name(invoice_label)['id']
+
+        labels.add(invoice_label_id)
+
+    # ---------------- mailtype could have been updated so doing this in the end -----------------
+    model_label_name = type_to_label_map.get(mail_type, None)
+    if model_label_name is not None:
+        falcon_client.create_label(model_label_name)
+        model_label_id = falcon_client.get_label_by_name(model_label_name)['id']
+
+        labels.add(model_label_id)
+
+    # ------------------------------------------------------------------------
+
+    if len(labels) > 0:
         falcon_client.gmail.add_remove_labels(
             mail_id,
-            label_ids_add=[label_id],
+            label_ids_add=list(labels),
             label_ids_remove=None
         )
 
@@ -172,7 +217,7 @@ def classify():
         if query is None:
             query = ''
 
-        query += ' -has:userlabels'
+        # query += ' -has:userlabels'
         query.strip()
 
         mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
@@ -187,7 +232,7 @@ def classify():
             print(em)
             pprint(mail_processed)
 
-            time.sleep(0.5)
+            # time.sleep(0.5)
 
 
 if __name__ == '__main__':
