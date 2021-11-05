@@ -68,7 +68,10 @@ def unsubscribe():
                 )
 
                 if unsub_mail is not None:
-                    falcon_client.gmail.send_to_unsubscribe(unsub_mail, unsub_subject)
+                    try:
+                        falcon_client.gmail.send_to_unsubscribe(unsub_mail, unsub_subject)
+                    except Exception as exp:
+                        print('Failed to unsub.', exp)
 
                 falcon_client.gmail.move_to_trash(mail_id)
 

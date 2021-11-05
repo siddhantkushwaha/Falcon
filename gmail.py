@@ -59,7 +59,7 @@ def process_mail_dic(mail):
 
             # double check in html content to see if something's found
             if unsubscribe_option is None:
-                checklist = ['opt-out', 'unsubscribe']
+                checklist = ['opt-out', 'unsubscribe', 'edit your notification settings']
                 for link in soup.find_all('a', href=True):
                     link_text = link.text.strip().lower()
                     if any(item in link_text for item in checklist):
@@ -239,12 +239,15 @@ class Gmail:
         msg.attach(MIMEText(text, 'plain'))
         raw_string = base64.urlsafe_b64encode(msg.as_bytes()).decode()
 
-        self.gmail_service.users().messages().send(
+        sent_mail = self.gmail_service.users().messages().send(
             userId='me',
             body={
                 'raw': raw_string
             }
         ).execute()
+
+        send_mail_id = sent_mail['id']
+        self.move_to_trash(send_mail_id)
 
     def move_to_trash(self, mail_id):
         self.gmail_service.users().messages().trash(userId='me', id=mail_id).execute()
