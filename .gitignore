@@ -8,3 +8,5 @@ modelinuse
 
 *.json
 *.csv
+
+emails.py
