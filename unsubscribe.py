@@ -1,4 +1,5 @@
 import time
+from datetime import datetime, timedelta
 
 import gmail
 from emails import email_list
@@ -18,6 +19,9 @@ def unsubscribe():
         if query is None:
             query = ''
 
+        after = datetime.now() - timedelta(days=1)
+
+        query += f" after:{after.strftime('%Y/%m/%d')}"
         query += ' -has:userlabels'
         query += ' -in:sent'
         query.strip()
