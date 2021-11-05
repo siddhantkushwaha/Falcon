@@ -1,5 +1,7 @@
 import base64
 import os.path
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from queue import Queue
 
 from bs4 import BeautifulSoup
@@ -9,7 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 from params import project_root_dir
-from util import get_key, clean
+from util import get_key
 
 
 def process_mail_dic(mail):
@@ -18,7 +20,7 @@ def process_mail_dic(mail):
     sender = None
     subject = None
     text = None
-    has_unsubscribe_option = False
+    unsubscribe_option = None
     files = []
 
     for part in mail['payloads']:
@@ -35,7 +37,7 @@ def process_mail_dic(mail):
                 subject = header_value
 
             elif header_name == 'list-unsubscribe':
-                has_unsubscribe_option = True
+                unsubscribe_option = header_value
 
         mime_type = get_key(part, ['mimeType'])
         data = get_key(part, ['body', 'data'])
@@ -56,12 +58,12 @@ def process_mail_dic(mail):
             text = soup.text
 
             # double check in html content to see if something's found
-            if not has_unsubscribe_option:
+            if unsubscribe_option is None:
                 checklist = ['opt-out', 'unsubscribe']
-                for link in soup.findAll('a'):
+                for link in soup.find_all('a', href=True):
                     link_text = link.text.strip().lower()
                     if any(item in link_text for item in checklist):
-                        has_unsubscribe_option = True
+                        unsubscribe_option = link['href']
                         break
 
         elif mime_type == 'text/plain':
@@ -70,18 +72,12 @@ def process_mail_dic(mail):
         else:
             print(f'Unseen mime-type found [{mime_type}].')
 
-    if text is not None:
-        text = clean(text)
-
-    if subject is not None:
-        subject = clean(subject)
-
     processed_data = {
         'Id': str(mail_id),
         'Sender': sender,
         'Subject': subject,
         'Text': text,
-        'Unsubscribe': 1 if has_unsubscribe_option else 0,
+        'Unsubscribe': unsubscribe_option,
         'Files': files,
     }
 
@@ -97,6 +93,7 @@ class Gmail:
             'https://mail.google.com/'
         ]
 
+        self.authenticated_email = None
         self.credentials = None
 
         self.__gmail_service = None
@@ -133,16 +130,17 @@ class Gmail:
                 flow = InstalledAppFlow.from_client_secrets_file(desktop_credentials_path, self.scopes)
                 self.credentials = flow.run_local_server(port=0)
 
-        authenticated_email = self.get_email()
-        if email != authenticated_email:
+        self.authenticated_email = self.get_email()
+        if email != self.authenticated_email:
 
             if os.path.exists(tokens_path):
                 # clear the tokens since they most likely tinkered with
                 os.remove(tokens_path)
 
-            raise Exception(f'Requested email [{email}] does not match authenticated email [{authenticated_email}].')
+            raise Exception(
+                f'Requested email [{email}] does not match authenticated email [{self.authenticated_email}].')
         else:
-            tokens_path = os.path.join(project_root_dir, f'tokens/{authenticated_email}.json')
+            tokens_path = os.path.join(project_root_dir, f'tokens/{self.authenticated_email}.json')
             os.makedirs(os.path.dirname(tokens_path), exist_ok=True)
             with open(tokens_path, 'w') as token:
                 token.write(self.credentials.to_json())
@@ -232,6 +230,24 @@ class Gmail:
             'removeLabelIds': label_ids_remove,
             'addLabelIds': label_ids_add
         }).execute()
+
+    def send_to_unsubscribe(self, to, subject):
+        text = ''
+        msg = MIMEMultipart()
+        msg['to'] = to
+        msg['subject'] = subject
+        msg.attach(MIMEText(text, 'plain'))
+        raw_string = base64.urlsafe_b64encode(msg.as_bytes()).decode()
+
+        self.gmail_service.users().messages().send(
+            userId='me',
+            body={
+                'raw': raw_string
+            }
+        ).execute()
+
+    def move_to_trash(self, mail_id):
+        self.gmail_service.users().messages().trash(userId='me', id=mail_id).execute()
 
 
 if __name__ == '__main__':
