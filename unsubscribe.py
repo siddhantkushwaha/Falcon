@@ -6,7 +6,7 @@ def is_newsletter(mail):
     return unsubscribe_val is not None, unsubscribe_val
 
 
-def unsubscribe(falcon_client, mail_id, mail_processed):
+def unsubscribe(falcon_client, mail_processed):
     should_unsub, unsub_val = is_newsletter(mail_processed)
     if should_unsub:
         subject = clean(mail_processed['Subject'])
