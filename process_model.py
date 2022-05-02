@@ -7,7 +7,7 @@ from ai.model import Model
 
 
 def train():
-    pt = os.path.join(params.project_root_dir, 'dataset', 'data.csv')
+    pt = os.path.join(params.root_dir, 'dataset', 'data.csv')
     labels = [
         'primary',
         'spam',
@@ -31,7 +31,7 @@ def test(name='model'):
     model = Model(name)
     model.load_model()
 
-    pt = os.path.join(params.project_root_dir, 'dataset', 'data.csv')
+    pt = os.path.join(params.root_dir, 'dataset', 'data.csv')
     data = pd.read_csv(pt)
 
     count = 0

@@ -1,9 +1,10 @@
 import time
 from pprint import pprint
 
+import data
+
 import gmail
 from ai.model import Model
-from emails import email_list
 from falcon import FalconClient
 from util import clean
 
@@ -163,5 +164,5 @@ def classify():
 
 
 if __name__ == '__main__':
-    emails = email_list
+    emails = data.emails
     classify()

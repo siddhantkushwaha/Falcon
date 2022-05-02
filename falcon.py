@@ -6,7 +6,7 @@ import time
 from datetime import datetime
 
 from gmail import Gmail
-from params import project_root_dir
+from params import root_dir
 
 model = None
 
@@ -58,7 +58,7 @@ class FalconClient:
 
     def save_mails(self, filter_q):
         start_time = datetime.now()
-        base_dir = os.path.join(project_root_dir, 'data', self.email)
+        base_dir = os.path.join(root_dir, 'data', self.email)
 
         # load state file
         state_file_path = os.path.join(base_dir, 'state.pickle')

@@ -23,7 +23,7 @@ class Model:
         self.train_data = None
         self.features_ordered = None
 
-        self.model_pt = os.path.join(params.project_root_dir, name)
+        self.model_pt = os.path.join(params.root_dir, name)
 
     def __get_extensions_str(self, files):
         if files is not None:

@@ -10,7 +10,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from params import project_root_dir
+from params import root_dir
 from util import get_key
 
 
@@ -113,9 +113,9 @@ class Gmail:
 
     # authentication method for desktop clients
     def __desktop_auth(self, email='*'):
-        tokens_path = os.path.join(project_root_dir, f'tokens/{email}.json')
+        tokens_path = os.path.join(root_dir, f'tokens/{email}.json')
 
-        desktop_credentials_path = os.path.join(project_root_dir, 'config', 'desktop_credentials.json')
+        desktop_credentials_path = os.path.join(root_dir, 'config', 'desktop_credentials.json')
 
         self.credentials = None
         # if token already exists
@@ -140,7 +140,7 @@ class Gmail:
             raise Exception(
                 f'Requested email [{email}] does not match authenticated email [{self.authenticated_email}].')
         else:
-            tokens_path = os.path.join(project_root_dir, f'tokens/{self.authenticated_email}.json')
+            tokens_path = os.path.join(root_dir, f'tokens/{self.authenticated_email}.json')
             os.makedirs(os.path.dirname(tokens_path), exist_ok=True)
             with open(tokens_path, 'w') as token:
                 token.write(self.credentials.to_json())
