@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timedelta
 
-import data
+import datareader
 
 import gmail
 import unsubscribe
@@ -9,7 +9,7 @@ from falcon import FalconClient
 from util import clean
 
 
-def cleanup():
+def cleanup(emails, num_days):
     for em, query in emails.items():
         falcon_client = FalconClient(email=em)
 
@@ -42,7 +42,7 @@ def cleanup():
             should_unsub, _ = unsubscribe.is_newsletter(mail_processed)
 
             is_deleted = False
-            if sender in data.blacklist_senders:
+            if sender in datareader.blacklist_senders:
                 is_deleted = True
                 print(f'Delete since sender [{sender}] is blacklisted.')
                 falcon_client.gmail.move_to_trash(mail_id)
@@ -51,7 +51,7 @@ def cleanup():
                 unsubscribe.unsubscribe(falcon_client, mail_processed)
                 falcon_client.gmail.move_to_trash(mail_id)
             else:
-                for blacklisted_subject in data.blacklist_subjects:
+                for blacklisted_subject in datareader.blacklist_subjects:
                     if subject == blacklisted_subject or subject.find(blacklisted_subject) > -1:
                         is_deleted = True
                         print(f'Delete since subject [{subject}] is blacklisted.')
@@ -63,7 +63,7 @@ def cleanup():
 
             time.sleep(0.5)
 
-        for blacklisted in data.blacklist_senders:
+        for blacklisted in datareader.blacklist_senders:
             query = f'from:{blacklisted}'
             mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
             for index, mail in enumerate(mails, 0):
@@ -82,6 +82,4 @@ def cleanup():
 
 
 if __name__ == '__main__':
-    emails = data.emails
-    num_days = 30
-    cleanup()
+    cleanup(emails=datareader.emails, num_days=1)
