@@ -54,11 +54,15 @@ def cleanup():
                 mail_id = mail['id']
                 falcon_client.gmail.move_to_trash(mail_id)
 
+                time.sleep(0.5)
+
         query = 'in:spam'
         mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
         for index, mail in enumerate(mails, 0):
             mail_id = mail['id']
             falcon_client.gmail.move_to_trash(mail_id)
+
+            time.sleep(0.5)
 
 
 if __name__ == '__main__':
