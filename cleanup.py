@@ -41,18 +41,25 @@ def cleanup():
             subject = clean(mail_processed['Subject'])
             should_unsub, _ = unsubscribe.is_newsletter(mail_processed)
 
+            is_deleted = False
             if sender in data.blacklist_senders:
+                is_deleted = True
                 print(f'Delete since sender [{sender}] is blacklisted.')
                 falcon_client.gmail.move_to_trash(mail_id)
             elif should_unsub:
+                is_deleted = True
                 unsubscribe.unsubscribe(falcon_client, mail_processed)
                 falcon_client.gmail.move_to_trash(mail_id)
             else:
                 for blacklisted_subject in data.blacklist_subjects:
                     if subject == blacklisted_subject or subject.find(blacklisted_subject) > -1:
+                        is_deleted = True
                         print(f'Delete since subject [{subject}] is blacklisted.')
                         falcon_client.gmail.move_to_trash(mail_id)
                         break
+
+            if not is_deleted:
+                falcon_client.gmail.add_remove_labels(mail_id, [], ['IMPORTANT'])
 
             time.sleep(0.5)
 
