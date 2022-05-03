@@ -1,7 +1,6 @@
 import time
 
 import datareader
-
 from cleanup import cleanup
 
 while True:
