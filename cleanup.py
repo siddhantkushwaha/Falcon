@@ -29,6 +29,8 @@ def cleanup(emails, num_days):
             mail_id = mail['id']
 
             mail_full = falcon_client.gmail.get_mail(mail_id)
+            # with open('data/m.json', 'w') as fp:
+            #     fp.write(json.dumps(mail_full))
 
             # we added a query but keeping this for safety
             if 'SENT' in mail_full.get('labelIds', []):

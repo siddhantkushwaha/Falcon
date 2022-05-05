@@ -55,6 +55,8 @@ def process_mail_dic(mail):
             continue
 
         data = base64.urlsafe_b64decode(data).decode()
+        # with open('data/m.html', 'w') as fp:
+        #     fp.write(data)
 
         if 'html' in mime_type:
             # prefer text from html over text from html
