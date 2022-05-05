@@ -5,6 +5,7 @@ parsed
 tokens
 model
 modelinuse
+downloads
 
 *.json
 *.csv

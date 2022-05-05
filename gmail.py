@@ -10,6 +10,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
+import params
 from params import root_dir
 from util import get_key
 
@@ -22,6 +23,7 @@ def process_mail_dic(mail):
     text = None
     unsubscribe_option = None
     files = []
+    attachment_ids = []
 
     for part in mail['payloads']:
 
@@ -41,10 +43,12 @@ def process_mail_dic(mail):
 
         mime_type = get_key(part, ['mimeType'])
         data = get_key(part, ['body', 'data'])
+        attachment_id = get_key(part, ['body', 'attachmentId'])
         filename = get_key(part, ['filename'], '')
 
         if len(filename) > 0:
             files.append(filename)
+            attachment_ids.append(attachment_id)
             continue
 
         if data is None:
@@ -79,6 +83,7 @@ def process_mail_dic(mail):
         'Text': text,
         'Unsubscribe': unsubscribe_option,
         'Files': files,
+        'AttachmentIds': attachment_ids
     }
 
     return processed_data
@@ -251,6 +256,21 @@ class Gmail:
 
     def move_to_trash(self, mail_id):
         self.gmail_service.users().messages().trash(userId='me', id=mail_id).execute()
+
+    def download_attachment(self, mail_id, attachment_id, filename=None):
+        attachment = self.gmail_service.users().messages().attachments() \
+            .get(userId='me', messageId=mail_id, id=attachment_id).execute()
+        data = base64.urlsafe_b64decode(attachment['data'].encode('UTF-8'))
+
+        if filename is not None:
+            file_path = os.path.join(params.downloads_dir, mail_id, filename)
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            with open(file_path, 'wb') as fp:
+                fp.write(data)
+
+            return file_path
+        else:
+            return data
 
 
 if __name__ == '__main__':

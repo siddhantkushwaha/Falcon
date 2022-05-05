@@ -2,7 +2,6 @@ import time
 from datetime import datetime, timedelta
 
 import datareader
-
 import gmail
 import unsubscribe
 from falcon import FalconClient
@@ -10,9 +9,10 @@ from util import clean
 
 
 def cleanup(emails, num_days):
-    for em, query in emails.items():
+    for em, main_query in emails.items():
         falcon_client = FalconClient(email=em)
 
+        query = main_query
         if query is None:
             query = ''
 
@@ -72,7 +72,20 @@ def cleanup(emails, num_days):
 
                 time.sleep(0.5)
 
-        query = 'in:spam'
+        for blacklisted in datareader.blacklist_content:
+            query = main_query if main_query is not None else ''
+            query += f' {blacklisted}'
+            if main_query is not None:
+                query += f' {main_query}'
+
+            mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
+            for index, mail in enumerate(mails, 0):
+                mail_id = mail['id']
+                falcon_client.gmail.move_to_trash(mail_id)
+
+                time.sleep(0.5)
+
+        query = f'in:spam'
         mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
         for index, mail in enumerate(mails, 0):
             mail_id = mail['id']

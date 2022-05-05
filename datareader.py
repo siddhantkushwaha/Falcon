@@ -11,8 +11,12 @@ for sender in blacklist["senders"]:
     blacklist_senders.add(sender)
 
 blacklist_subjects = []
-for sender in blacklist["subject"]:
-    blacklist_subjects.append(sender)
+for subject in blacklist["subject"]:
+    blacklist_subjects.append(subject)
+
+blacklist_content = []
+for content in blacklist["content"]:
+    blacklist_content.append(content)
 
 with open(os.path.join(root_dir, 'data', 'emails.json'), 'rb') as fp:
     emails = json.load(fp)
