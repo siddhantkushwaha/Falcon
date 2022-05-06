@@ -30,8 +30,6 @@ def process_intervals():
 def loop():
     last_checked = datetime.fromtimestamp(0, tz=timezone.utc)
     while True:
-        time.sleep(60)
-
         _intervals = process_intervals()
 
         curr_time = datetime.now(tz=timezone.utc)
@@ -51,11 +49,14 @@ def loop():
         formatted_time = curr_local_time.strftime('%d/%m/%y %I:%M %p')
         if timediff > _timediff:
             print(formatted_time, f'Last cleanup ran {timediff} minutes ago, triggering cleanup.')
-            cleanup(emails=datareader.emails, num_days=1)
+            for em in datareader.emails:
+                cleanup(email=em, main_query=datareader.emails[em], num_days=1)
 
             last_checked = curr_time
         else:
             print(formatted_time, f'Last cleanup ran {timediff} minutes ago, skipping cleanup.')
+
+        time.sleep(60)
 
 
 if __name__ == '__main__':
