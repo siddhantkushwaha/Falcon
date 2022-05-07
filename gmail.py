@@ -176,7 +176,21 @@ class Gmail:
         return self.gmail_service.users().labels().get(userId='me', id=label_id).execute()
 
     def create_label(self, label):
-        return self.gmail_service.users().labels().create(userId='me', body=label).execute()
+        label_config = {
+            'name': label,
+            'type': 'user',
+            'labelListVisibility': 'labelShow',
+            'messageListVisibility': 'show',
+            'messagesTotal': 0,
+            'threadsUnread': 0,
+            'messagesUnread': 0,
+            'threadsTotal': 0,
+            'color': {
+                "textColor": '#000000',
+                "backgroundColor": '#ffffff',
+            }
+        }
+        return self.gmail_service.users().labels().create(userId='me', body=label_config).execute()
 
     def list_mails(
             self,
