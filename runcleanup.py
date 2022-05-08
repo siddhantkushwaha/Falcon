@@ -7,9 +7,15 @@ import datareader
 import params
 from cleanup import cleanup
 
+"""
+    #1 - 9 AM to 6 PM : Check every 15 minutes
+    #2 - 11 PM to 5 AM : Check once in 6 hours
+    #3 - In other intervals check every 30 minutes
+"""
+default_timediff = 30
 intervals = {
-    (9, 18): 15,  # in this interval check every 15 minutes
-    (23, 5): 360,  # check only once in 6 hours
+    (9, 18): 15,  # 1
+    (23, 5): 360,  # 2
 }
 
 
@@ -39,7 +45,7 @@ def loop():
 
         time_in_minutes = (60 * curr_local_time.time().hour) + curr_local_time.time().minute
 
-        _timediff = 30
+        _timediff = default_timediff
         for interval in _intervals:
             start, end = interval[0] * 60, interval[1] * 60
             if start <= time_in_minutes <= end:
@@ -54,7 +60,8 @@ def loop():
 
             last_checked = curr_time
         else:
-            print(formatted_time, f'Last cleanup ran {timediff} minutes ago, skipping cleanup.')
+            if timediff % 30 == 0:
+                print(formatted_time, f'Last cleanup ran {timediff} minutes ago, skipping cleanup.')
 
         time.sleep(60)
 
