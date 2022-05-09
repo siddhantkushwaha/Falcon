@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import datareader
 import gmail
 import unsubscribe
+import util
 from falcon import FalconClient
 from util import clean
 
@@ -26,6 +27,16 @@ def is_content_blacklisted(content):
     return False
 
 
+def get_mail(falcon_client, mail_id):
+    mail = util.get_mail_from_cache(mail_id)
+    if mail is not None:
+        return mail
+
+    mail = falcon_client.gmail.get_mail(mail_id)
+    util.save_mail_to_cache(mail)
+    return mail
+
+
 def cleanup(email, main_query, num_days):
     print(f'Cleanup triggered for {email} - {main_query}.')
     falcon_client = FalconClient(email=email)
@@ -46,9 +57,7 @@ def cleanup(email, main_query, num_days):
     for index, mail in enumerate(mails, 0):
         mail_id = mail['id']
 
-        mail_full = falcon_client.gmail.get_mail(mail_id)
-        # with open('data/m.json', 'w') as fp:
-        #     fp.write(json.dumps(mail_full))
+        mail_full = get_mail(falcon_client, mail_id)
 
         # we added a query but keeping this for safety
         if 'SENT' in mail_full.get('labelIds', []):
@@ -107,7 +116,7 @@ def cleanup(email, main_query, num_days):
         for index, mail in enumerate(mails, 0):
             mail_id = mail['id']
 
-            mail_full = falcon_client.gmail.get_mail(mail_id)
+            mail_full = get_mail(falcon_client, mail_id)
             # if 'SENT' in mail_full.get('labelIds', []):
             #     print('Skip sent mail.')
             #     continue

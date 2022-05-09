@@ -1,3 +1,5 @@
+import json
+import os
 import re
 
 
@@ -20,6 +22,23 @@ def clean(text):
     cleaned = cleaned.strip().lower()
 
     return cleaned
+
+
+def save_mail_to_cache(mail):
+    mail_id = mail['id']
+    pt = os.path.join('dump', f'{mail_id}.json')
+    os.makedirs(os.path.dirname(pt), exist_ok=True)
+    with open(pt, 'w') as fp:
+        fp.write(json.dumps(mail))
+
+
+def get_mail_from_cache(mail_id):
+    pt = os.path.join('dump', f'{mail_id}.json')
+    if os.path.exists(pt):
+        with open(pt, 'rb') as fp:
+            mail = json.load(fp)
+            return mail
+    return None
 
 
 def get_key(obj, keys, if_none_val=None):
