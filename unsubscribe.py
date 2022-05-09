@@ -10,7 +10,7 @@ def unsubscribe(falcon_client, mail_processed):
     should_unsub, unsub_val = is_newsletter(mail_processed)
     if should_unsub:
         subject = clean(mail_processed['Subject'])
-        unsub_list = mail_processed['Unsubscribe']
+        unsub_list = unsub_val
 
         unsub_list = filter(lambda y: y.startswith('mailto:'),
                             [x.strip()[1:-1] for x in unsub_list.split(', ')])
@@ -34,6 +34,7 @@ def unsubscribe(falcon_client, mail_processed):
             subject,
             unsub_mail,
             unsub_subject,
+            unsub_val,
             sep='\n',
             end='\n------------------\n'
         )
