@@ -92,7 +92,11 @@ def cleanup(email, main_query, num_days):
             falcon_client.gmail.move_to_trash(mail_id)
         elif 'IMPORTANT' in mail_full.get('labelIds', []):
             print(f'Remove unnecessary IMPORTANT label.')
+
             falcon_client.gmail.add_remove_labels(mail_id, [], ['IMPORTANT'])
+
+            mail_full['labelIds'].remove('IMPORTANT')
+            util.save_mail_to_cache(mail_full)
 
         time.sleep(0.5)
 
