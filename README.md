@@ -3,7 +3,7 @@
 #### Falcon is a GMail utility to automatically  
   
  - Move spam emails to trash.  
- - Move blacklisted emails to trash.  
+ - Move emails to trash from senders in block-list.  
  - Unsubscribe from email-lists and move to trash.  
  - Add custom queries to select emails to be moved to trash. For example   
    - 'label: category:promotions'  
