@@ -21,7 +21,7 @@
 
  1. `pip install -r requirements.txt`
  2. Build the desktop_credentials.json file for GMail API.
-    - Follow [these](https://gist.github.com/siddhantkushwaha/42ebc0a6d3348b0f62fb4b5e769876ed) steps to build the file.
+    - Follow [these](https://gist.github.com/siddhantkushwaha/42ebc0a6d3348b0f62fb4b5e769876ed) steps to build the credentials.
     - Move it inside config/.
  3. Setup the blacklist and whitelist JSON files within data/.
  4. `python cleanup.py` or
