@@ -146,4 +146,4 @@ def cleanup(email, main_query, num_days):
 
 if __name__ == '__main__':
     for em in datareader.emails:
-        cleanup(email=em, main_query=datareader.emails[em], num_days=1)
+        cleanup(email=em, main_query=datareader.emails[em], num_days=10)
