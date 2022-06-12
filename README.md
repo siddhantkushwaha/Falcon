@@ -20,9 +20,12 @@
 ####  Setup
 
  1. `pip install -r requirements.txt`
- 2. Setup the template .json files for Google API, blacklist and whitelist.
- 3. `python cleanup.py` or
- 4. `python runcleanup.py` to run cleanup perpetually.
+ 2. Build the desktop_credentials.json file for GMail API.
+    - Follow [these](https://gist.github.com/siddhantkushwaha/42ebc0a6d3348b0f62fb4b5e769876ed) steps to build the credentials.
+    - Move it inside config/.
+ 3. Setup the blacklist and whitelist JSON files within data/.
+ 4. `python cleanup.py` or
+ 5. `python runcleanup.py` to run cleanup perpetually.
 
 #### Please reach out if you feel like contributing in any of following areas
 
