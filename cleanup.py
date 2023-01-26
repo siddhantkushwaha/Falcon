@@ -1,30 +1,13 @@
 import time
 from datetime import datetime, timedelta
 
-import datareader
 import gmail
+import params
 import unsubscribe
 import util
+from db.database import get_db
+from db.models import Rule
 from falcon import FalconClient
-from util import clean
-
-
-def is_subject_blacklisted(subject):
-    for blacklisted_subject in datareader.blacklist_subjects:
-        subject = subject.lower()
-        blacklisted_subject = blacklisted_subject.lower()
-        if subject == blacklisted_subject or subject.find(blacklisted_subject) > -1:
-            return True
-    return False
-
-
-def is_content_blacklisted(content):
-    for blacklisted_content in datareader.blacklist_content:
-        content = content.lower()
-        blacklisted_content = blacklisted_content.lower()
-        if content == blacklisted_content or content.find(blacklisted_content) > -1:
-            return True
-    return False
 
 
 def get_mail(falcon_client, mail_id):
@@ -37,8 +20,49 @@ def get_mail(falcon_client, mail_id):
     return mail
 
 
+def consolidate(falcon_client, main_query):
+    query = f'in:spam'
+    mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
+    for index, mail in enumerate(mails, 0):
+        mail_id = mail['id']
+        falcon_client.gmail.move_to_trash(mail_id)
+
+        time.sleep(0.5)
+
+
+def get_labels(mail):
+    return {i for i in mail.get('labelIds', [])}
+
+
+def should_delete_email(mail, blacklist_rules, whitelist_rules):
+    mail_processed = gmail.process_mail_dic(mail)
+
+    sender = mail_processed['Sender']
+    subject = util.clean(mail_processed['Subject'])
+    text = util.clean(mail_processed['Text'])
+    should_unsub = unsubscribe.has_unsub_option(mail_processed)[0]
+
+    if sender in whitelist_rules:
+        util.log(f'Skip emails from [{sender}]. Sender is part of the whitelist.')
+        return False
+
+    if 'STARRED' in get_labels(mail):
+        util.log(f'Skip starred.')
+        return False
+
+    if sender in blacklist_rules:
+        util.log(f'Delete since sender [{sender}] is blacklisted.')
+        return True
+
+
 def cleanup(email, main_query, num_days):
-    print(f'Cleanup triggered for {email} - {main_query}.')
+    util.log(f'Cleanup triggered for {email} - {main_query}.')
+
+    db = get_db()
+    blacklist_rules = {i.query for i in db.session.query(Rule).filter(Rule.type == 'blacklist').all()}
+    whitelist_rules = {i.query for i in db.session.query(Rule).filter(Rule.type == 'whitelist').all()}
+    label_rules = {i.query for i in db.session.query(Rule).filter(Rule.type == 'label').all()}
+
     falcon_client = FalconClient(email=email)
 
     query = main_query
@@ -48,7 +72,6 @@ def cleanup(email, main_query, num_days):
     after = datetime.now() - timedelta(days=num_days)
 
     query += f" after:{after.strftime('%Y/%m/%d')}"
-    query += ' -has:userlabels'
     query += ' -in:sent'
     query.strip()
 
@@ -59,91 +82,23 @@ def cleanup(email, main_query, num_days):
 
         mail_full = get_mail(falcon_client, mail_id)
 
-        # we added a query but keeping this for safety
-        if 'SENT' in mail_full.get('labelIds', []):
-            print('Skip sent mail.')
-            continue
-
-        mail_processed = gmail.process_mail_dic(mail_full)
-
-        sender = mail_processed['Sender']
-        subject = clean(mail_processed['Subject'])
-        text = clean(mail_processed['Text'])
-        should_unsub, _ = unsubscribe.is_newsletter(mail_processed)
-
-        move_to_trash = True
-
-        if sender in datareader.whitelisted_senders:
-            move_to_trash = False
-            print(f'Skip emails from [{sender}]. Sender is part of the whitelist.')
-        elif should_unsub:
-            print('Delete since this is a newsletter.')
-            unsubscribe.unsubscribe(falcon_client, mail_processed)
-        elif sender in datareader.blacklist_senders:
-            print(f'Delete since sender [{sender}] is blacklisted.')
-        elif is_subject_blacklisted(subject):
-            print(f'Delete since subject [{subject}] is blacklisted.')
-        elif is_content_blacklisted(text) or is_content_blacklisted(subject):
-            print(f'Delete since mail content is blacklisted.')
-        else:
-            move_to_trash = False
+        move_to_trash = should_delete_email(mail_full, blacklist_rules, whitelist_rules)
 
         if move_to_trash:
             falcon_client.gmail.move_to_trash(mail_id)
-        elif 'IMPORTANT' in mail_full.get('labelIds', []):
-            print(f'Remove unnecessary IMPORTANT label.')
+
+        elif 'IMPORTANT' in get_labels(mail):
+            util.log(f'Remove unnecessary IMPORTANT label.')
 
             falcon_client.gmail.add_remove_labels(mail_id, [], ['IMPORTANT'])
 
             mail_full['labelIds'].remove('IMPORTANT')
-            util.save_mail_to_cache(mail_full)
 
         time.sleep(0.5)
 
-    for blacklisted_sender in datareader.blacklist_senders:
-        if blacklisted_sender in datareader.whitelisted_senders:
-            print(f'Skip emails from [{blacklisted_sender}]. Sender is part of the whitelist.')
-
-        query = f'from:{blacklisted_sender}'
-        mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
-        for index, mail in enumerate(mails, 0):
-            mail_id = mail['id']
-            falcon_client.gmail.move_to_trash(mail_id)
-
-            time.sleep(0.5)
-
-    for blacklisted_content in datareader.blacklist_content:
-        query = main_query if main_query is not None else ''
-        query += f' {blacklisted_content}'
-
-        mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
-        for index, mail in enumerate(mails, 0):
-            mail_id = mail['id']
-
-            mail_full = get_mail(falcon_client, mail_id)
-            # if 'SENT' in mail_full.get('labelIds', []):
-            #     print('Skip sent mail.')
-            #     continue
-
-            mail_processed = gmail.process_mail_dic(mail_full)
-            sender = mail_processed['Sender']
-            if sender in datareader.whitelisted_senders:
-                print(f'Skip emails from [{sender}]. Sender is part of the whitelist.')
-                continue
-
-            falcon_client.gmail.move_to_trash(mail_id)
-
-            time.sleep(0.5)
-
-    query = f'in:spam'
-    mails = falcon_client.gmail.list_mails(query=query, max_pages=10000)
-    for index, mail in enumerate(mails, 0):
-        mail_id = mail['id']
-        falcon_client.gmail.move_to_trash(mail_id)
-
-        time.sleep(0.5)
+    consolidate(falcon_client, main_query)
 
 
 if __name__ == '__main__':
-    for em in datareader.emails:
-        cleanup(email=em, main_query=datareader.emails[em], num_days=10)
+    for em in params.emails:
+        cleanup(email=em, main_query=params.emails[em], num_days=10000)

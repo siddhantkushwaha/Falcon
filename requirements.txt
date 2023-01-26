@@ -1,3 +1,4 @@
+pytz
 bs4
 google-api-core
 google-api-python-client
@@ -7,3 +8,4 @@ google-auth-oauthlib
 google-pasta
 googleapis-common-protos
 lxml
+sqlalchemy

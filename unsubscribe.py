@@ -1,13 +1,14 @@
+import util
 from util import clean
 
 
-def is_newsletter(mail):
+def has_unsub_option(mail):
     unsubscribe_val = mail.get('Unsubscribe', None)
     return unsubscribe_val is not None, unsubscribe_val
 
 
 def unsubscribe(falcon_client, mail_processed):
-    should_unsub, unsub_val = is_newsletter(mail_processed)
+    should_unsub, unsub_val = has_unsub_option(mail_processed)
     if should_unsub:
         subject = clean(mail_processed['Subject'])
         unsub_list = unsub_val
@@ -25,22 +26,9 @@ def unsubscribe(falcon_client, mail_processed):
                 unsub_subject = unsub_mail[unsub_subject_idx:].replace('?subject=', '')
                 unsub_mail = unsub_mail[:unsub_subject_idx]
 
-        tag = 'Unsubscribing from email list: '
-        if unsub_mail is None:
-            tag = 'Cannot unsub, moving to trash: '
-
-        print(
-            tag,
-            subject,
-            unsub_mail,
-            unsub_subject,
-            unsub_val,
-            sep='\n',
-            end='\n------------------\n'
-        )
-
         if unsub_mail is not None:
             try:
                 falcon_client.gmail.send_to_unsubscribe(unsub_mail, unsub_subject)
             except Exception as exp:
-                print('Failed to unsub.', exp)
+                util.log('Failed to unsubscribe.')
+                util.error(exp)

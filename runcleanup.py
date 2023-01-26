@@ -3,18 +3,18 @@ from datetime import datetime, timezone
 
 import pytz
 
-import datareader
 import params
+import util
 from cleanup import cleanup
 
 """
-    #1 - 9 AM to 6 PM : Check every 30 minutes
+    #1 - 9 AM to 6 PM : Check every hour
     #2 - 11 PM to 5 AM : Check once in 6 hours
     #3 - In other intervals check every 60 minutes
 """
 default_timediff = 60
 intervals = {
-    (9, 18): 30,  # 1
+    (9, 18): 60,  # 1
     (23, 5): 360,  # 2
 }
 
@@ -53,21 +53,20 @@ def loop():
                     _timediff = _intervals[interval]
                     break
 
-            formatted_time = curr_local_time.strftime('%d/%m/%y %I:%M %p')
             if timediff > _timediff:
-                print(formatted_time, f'Last cleanup ran {timediff} minutes ago, triggering cleanup.')
-                for em in datareader.emails:
-                    cleanup(email=em, main_query=datareader.emails[em], num_days=1)
+                util.log(f'Last cleanup ran {timediff} minutes ago, triggering cleanup.')
+                for em in params.emails:
+                    cleanup(email=em, main_query=params.emails[em], num_days=1)
 
                 last_checked = curr_time
             else:
                 if timediff % 30 == 0:
-                    print(formatted_time, f'Last cleanup ran {timediff} minutes ago, skipping cleanup.')
+                    util.log( f'Last cleanup ran {timediff} minutes ago, skipping cleanup.')
 
             time.sleep(60)
 
         except Exception as e:
-            print(e)
+            util.error(e)
 
 
 if __name__ == '__main__':

@@ -10,4 +10,5 @@ downloads
 *.json
 *.csv
 
-emails.py
+**.idea
+**logs

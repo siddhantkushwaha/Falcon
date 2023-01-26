@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 import params
+import util
 from params import root_dir
 from util import get_key
 
@@ -76,7 +77,7 @@ def process_mail_dic(mail):
             if text is None:
                 text = data
         else:
-            print(f'Unseen mime-type found [{mime_type}].')
+            util.log(f'Unseen mime-type found [{mime_type}].')
 
     processed_data = {
         'Id': str(mail_id),

@@ -2,6 +2,18 @@ import json
 import os
 import re
 
+from viper.customLogging import get_logger, DEBUG
+
+logger = get_logger('falcon')
+
+
+def log(msg):
+    logger.log(DEBUG, msg)
+
+
+def error(msg):
+    logger.error(msg)
+
 
 def clean(text):
     if text is None:
