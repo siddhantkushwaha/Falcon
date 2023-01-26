@@ -63,6 +63,8 @@ def cleanup(email, main_query, num_days):
     whitelist_rules = {i.query for i in db.session.query(Rule).filter(Rule.type == 'whitelist').all()}
     label_rules = {i.query for i in db.session.query(Rule).filter(Rule.type == 'label').all()}
 
+    util.log(f'Blacklist: [{blacklist_rules}]')
+
     falcon_client = FalconClient(email=email)
 
     query = main_query
@@ -101,4 +103,4 @@ def cleanup(email, main_query, num_days):
 
 if __name__ == '__main__':
     for em in params.emails:
-        cleanup(email=em, main_query=params.emails[em], num_days=10000)
+        cleanup(email=em, main_query=params.emails[em], num_days=1)

@@ -9,3 +9,5 @@ google-pasta
 googleapis-common-protos
 lxml
 sqlalchemy
+viper-python
+

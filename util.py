@@ -2,13 +2,13 @@ import json
 import os
 import re
 
-from viper.customLogging import get_logger, DEBUG
+from viper.customLogging import get_logger
 
-logger = get_logger('falcon')
+logger = get_logger('falcon', log_level=25)
 
 
 def log(msg):
-    logger.log(DEBUG, msg)
+    logger.log(25, msg)
 
 
 def error(msg):
