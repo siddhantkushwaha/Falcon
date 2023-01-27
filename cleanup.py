@@ -133,6 +133,7 @@ def cleanup(email, main_query, num_days):
 
     get_query += f" after:{after.strftime('%Y/%m/%d')}"
     get_query += ' -in:sent'
+    get_query += ' -in:trash'
     get_query.strip()
 
     mails = falcon_client.gmail.list_mails(query=get_query, max_pages=10000)
