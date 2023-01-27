@@ -14,6 +14,8 @@ class Rule(Base):
 
     query = Column(String, primary_key=True)
 
+    apply_to = Column(String, primary_key=True)
+
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 
