@@ -10,6 +10,18 @@ from db.models import Rule
 from falcon import FalconClient
 
 
+def evaluate_clause(clause, sender, subject, text, labels, tags):
+    """
+        variables needed in args for eval() to work
+    """
+
+    sender = sender.lower().strip()
+    labels = {i.lower() for i in labels}
+    tags = {i.lower() for i in tags}
+
+    return eval(clause, {}, locals())
+
+
 def get_mail(falcon_client, mail_id):
     mail = util.get_mail_from_cache(mail_id)
     if mail is not None:
@@ -30,33 +42,66 @@ def consolidate(falcon_client, main_query):
         time.sleep(0.5)
 
 
-def get_labels(mail):
+def get_label_ids(mail):
     return {i for i in mail.get('labelIds', [])}
 
 
-def should_delete_email(mail, blacklist_rules, whitelist_rules):
+def get_label_names(mail, label_id_to_name_mapping):
+    return {label_id_to_name_mapping[i] for i in get_label_ids(mail)}
+
+
+def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name_mapping):
     mail_processed = gmail.process_mail_dic(mail)
+    sender = mail_processed['Sender'].lower()
+    subject = mail_processed['Subject']
+    text = mail_processed['Text']
+    labels = get_label_names(mail, label_id_to_name_mapping)
+    tags = set()
 
-    sender = mail_processed['Sender']
-    subject = util.clean(mail_processed['Subject'])
-    text = util.clean(mail_processed['Text'])
     should_unsub = unsubscribe.has_unsub_option(mail_processed)[0]
+    if should_unsub:
+        tags.add('unsubscribe')
 
-    if sender in whitelist_rules:
-        util.log(f'Skip emails from [{sender}]. Sender is part of the whitelist.')
-        return False
+    for q in whitelist_rules:
+        if evaluate_clause(q, sender, subject, text, labels, tags):
+            util.log(f'Do not delete since [{q}] evaluates to True.')
+            return False
 
-    if 'STARRED' in get_labels(mail):
-        util.log(f'Skip starred.')
-        return False
+    for q in blacklist_rules:
+        if evaluate_clause(q, sender, subject, text, labels, tags):
+            util.log(f'Delete since [{q}] evaluates to True.')
+            return True
 
-    if sender.lower() in blacklist_rules:
-        util.log(f'Delete since sender [{sender}] is blacklisted.')
-        return True
+    return False
 
-    if should_unsub and 'label:unsubscribe' in blacklist_rules:
-        util.log(f'Delete [{subject}] since there is an option to unsubscribe.')
-        return True
+
+def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_name_mapping):
+    mail_processed = gmail.process_mail_dic(mail)
+    sender = mail_processed['Sender'].lower()
+    subject = mail_processed['Subject']
+    text = mail_processed['Text']
+    labels = get_label_names(mail, label_id_to_name_mapping)
+    tags = set()
+
+    should_unsub = unsubscribe.has_unsub_option(mail_processed)[0]
+    if should_unsub:
+        tags.add('unsubscribe')
+
+    for q, label_out in label_rules:
+        label_out = label_out.upper().strip()
+
+        label_op_type = label_out[0]
+        label_name = label_out[1:]
+
+        if evaluate_clause(q, sender, subject, text, labels, tags):
+            if label_op_type == '+':
+                util.log(f'Add label [{label_name}] since [{q}] evaluates to True.')
+                add_labels.append(label_name)
+            elif label_op_type == '-':
+                util.log(f'Remove label [{label_name}] since [{q}] evaluates to True.')
+                remove_labels.append(label_name)
+            else:
+                raise Exception(f'Invalid rule out [{label_out}].')
 
 
 def cleanup(email, main_query, num_days):
@@ -64,14 +109,19 @@ def cleanup(email, main_query, num_days):
 
     db = get_db()
 
-    get_query = lambda rule_type: (Rule.type == rule_type) & \
-                                  ((Rule.apply_to == 'all') | (Rule.apply_to.like(f'%+({email})%')))
+    def get_query(rule_type):
+        return (Rule.type.like(f'{rule_type}%')) & ((Rule.apply_to == 'all') | (Rule.apply_to.like(f'%+({email})%')))
 
     blacklist_rules = {i.query for i in db.session.query(Rule).filter(get_query('blacklist')).all()}
+
     whitelist_rules = {i.query for i in db.session.query(Rule).filter(get_query('whitelist')).all()}
-    label_rules = {i.query for i in db.session.query(Rule).filter(get_query('label')).all()}
+    whitelist_rules.add("'STARRED' in labels")
+
+    label_rules = {(i.query, i.type.split(':')[1]) for i in db.session.query(Rule).filter(get_query('label')).all()}
+    label_rules.add(("'IMPORTANT' in labels", '-IMPORTANT'))
 
     util.log(f'Blacklist: [{blacklist_rules}]')
+    util.log(f'Labelling rules: [{label_rules}].')
 
     falcon_client = FalconClient(email=email)
 
@@ -87,25 +137,52 @@ def cleanup(email, main_query, num_days):
 
     mails = falcon_client.gmail.list_mails(query=get_query, max_pages=10000)
 
+    created_label_names = {label['name']: label['id'] for label in falcon_client.gmail.list_labels()['labels']}
+    created_label_ids = {label['id']: label['name'] for label in falcon_client.gmail.list_labels()['labels']}
+
     for mail in mails:
         mail_id = mail['id']
 
         mail_full = get_mail(falcon_client, mail_id)
 
-        move_to_trash = should_delete_email(mail_full, blacklist_rules, whitelist_rules)
+        move_to_trash = should_delete_email(
+            mail_full,
+            blacklist_rules,
+            whitelist_rules,
+            created_label_ids
+        )
 
         if move_to_trash:
             falcon_client.gmail.move_to_trash(mail_id)
 
-        elif 'IMPORTANT' in get_labels(mail_full):
-            util.log(f'Remove unnecessary IMPORTANT label.')
+        else:
+            add_label_names = []
+            remove_label_names = []
 
-            falcon_client.gmail.add_remove_labels(mail_id, [], ['IMPORTANT'])
+            process_labelling(
+                mail_full,
+                label_rules,
+                add_label_names,
+                remove_label_names,
+                created_label_ids
+            )
 
-            mail_full['labelIds'].remove('IMPORTANT')
+            existing_label_ids = get_label_ids(mail_full)
+
+            add_label_ids = [created_label_names[i] for i in add_label_names if
+                             created_label_names[i] not in existing_label_ids]
+
+            remove_label_ids = [created_label_names[i] for i in remove_label_names if
+                                created_label_names[i] in existing_label_ids]
+
+            if len(add_label_ids) > 0 or len(remove_label_ids) > 0:
+                falcon_client.gmail.add_remove_labels(mail_id, add_label_ids, remove_label_ids)
+                for i in remove_label_ids:
+                    mail_full['labelIds'].remove(i)
+                for i in add_label_ids:
+                    mail_full['labelIds'].append(i)
 
         util.save_mail_to_cache(mail_full)
-
         time.sleep(0.5)
 
     consolidate(falcon_client, main_query)

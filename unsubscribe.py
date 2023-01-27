@@ -1,5 +1,4 @@
 import util
-from util import clean
 
 
 def has_unsub_option(mail):
@@ -10,7 +9,6 @@ def has_unsub_option(mail):
 def unsubscribe(falcon_client, mail_processed):
     should_unsub, unsub_val = has_unsub_option(mail_processed)
     if should_unsub:
-        subject = clean(mail_processed['Subject'])
         unsub_list = unsub_val
 
         unsub_list = filter(lambda y: y.startswith('mailto:'),

@@ -12,6 +12,7 @@ class Rule(Base):
     # whitelist, blacklist, label:<label-name>
     type = Column(String, primary_key=True)
 
+    # email:<email> | label:<label-name>
     query = Column(String, primary_key=True)
 
     apply_to = Column(String, primary_key=True)
