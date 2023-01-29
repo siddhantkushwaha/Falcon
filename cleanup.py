@@ -217,6 +217,8 @@ if __name__ == '__main__':
         if num_days == -1:
             num_days = 10000
 
+        util.log(f'Running cleanup on emails in last [{num_days}] days.')
+
         for em in params.emails:
             cleanup(email=em, main_query=params.emails[em], num_days=num_days)
     except Exception as exp:
