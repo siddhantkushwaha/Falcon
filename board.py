@@ -3,7 +3,6 @@
     This is a draw-board to experiment with APIS and work flows
 
 """
-import pickle
 
 import gmail
 import params
@@ -15,11 +14,11 @@ from falcon import FalconClient
 def query():
     falcon_client = FalconClient(email=list(params.emails.keys())[1])
 
-    mails = falcon_client.gmail.list_mails(query='', max_pages=10000)
+    mails = falcon_client.gmail.list_mails(query='', max_pages=1)
 
-    senders = dict()
-    with open('data/a.pickle', 'wb') as fp:
-        pickle.dump(senders, fp)
+    # senders = dict()
+    # with open('data/a.pickle', 'wb') as fp:
+    #     pickle.dump(senders, fp)
 
     for mail in mails:
         mail_id = mail['id']
@@ -29,21 +28,22 @@ def query():
         sender = mail_processed['Sender'].lower()
         print(sender)
 
-        senders[sender] = senders.get(sender, 0) + 1
+        # senders[sender] = senders.get(sender, 0) + 1
 
-    with open('data/a.pickle', 'wb') as fp:
-        pickle.dump(senders, fp)
-
-    senders_by_count = [(email, senders[email]) for email in senders]
-    senders_by_count.sort(key=lambda x: x[1], reverse=True)
-    print(senders_by_count)
+    # with open('data/a.pickle', 'wb') as fp:
+    #     pickle.dump(senders, fp)
+    #
+    # senders_by_count = [(email, senders[email]) for email in senders]
+    # senders_by_count.sort(key=lambda x: x[1], reverse=True)
+    # print(senders_by_count)
 
 
 def write_rules():
     db = get_db()
     for row in [
         # ['type', 'query', 'apply_to']
-        # ['blacklist', "sender == 'ecatering@irctc.co.in'", 'all'],
+        ['blacklist', "order in labels and timediff > week", 'all'],
+        ['blacklist', "notification in labels and timediff > day", 'all'],
     ]:
         rule = Rule(
             type=row[0],

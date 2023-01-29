@@ -18,6 +18,13 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
     labels = {i.lower() for i in labels}
     tags = {i.lower() for i in tags}
 
+    minute = 60
+    hour = 60 * minute
+    day = 24 * hour
+    week = 7 * day
+    month = 30 * day
+    year = 365 * day
+
     return eval(clause, {}, locals())
 
 
