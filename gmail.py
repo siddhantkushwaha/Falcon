@@ -5,6 +5,7 @@ from email.mime.text import MIMEText
 from queue import Queue
 
 from bs4 import BeautifulSoup
+from dateutil.parser import parse
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -22,6 +23,7 @@ def process_mail_dic(mail):
     sender = None
     subject = None
     text = None
+    date_time = None
     unsubscribe_option = None
     files = []
     attachment_ids = []
@@ -38,6 +40,9 @@ def process_mail_dic(mail):
 
             elif header_name == 'subject':
                 subject = header_value
+
+            elif header_name == 'date':
+                date_time = parse(header_value)
 
             elif header_name == 'list-unsubscribe':
                 unsubscribe_option = header_value
@@ -86,7 +91,8 @@ def process_mail_dic(mail):
         'Text': text,
         'Unsubscribe': unsubscribe_option,
         'Files': files,
-        'AttachmentIds': attachment_ids
+        'AttachmentIds': attachment_ids,
+        'DateTime': date_time
     }
 
     return processed_data
