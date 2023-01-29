@@ -1,3 +1,4 @@
+import sys
 import time
 from datetime import datetime, timedelta
 
@@ -212,7 +213,11 @@ def cleanup(email, main_query, num_days):
 
 if __name__ == '__main__':
     try:
+        num_days = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+        if num_days == -1:
+            num_days = 10000
+
         for em in params.emails:
-            cleanup(email=em, main_query=params.emails[em], num_days=1)
+            cleanup(email=em, main_query=params.emails[em], num_days=num_days)
     except Exception as exp:
         util.error(exp)
