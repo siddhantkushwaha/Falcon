@@ -128,10 +128,10 @@ def cleanup(email, main_query, num_days):
     blacklist_rules = {i.query for i in db.session.query(Rule).filter(get_query('blacklist')).all()}
 
     whitelist_rules = {i.query for i in db.session.query(Rule).filter(get_query('whitelist')).all()}
-    whitelist_rules.add("'STARRED' in labels")
+    whitelist_rules.add("'starred' in labels")
 
     label_rules = {(i.query, i.type.split(':')[1]) for i in db.session.query(Rule).filter(get_query('label')).all()}
-    label_rules.add(("'IMPORTANT' in labels", '-IMPORTANT'))
+    label_rules.add(("'important' in labels", '-IMPORTANT'))
 
     util.log(f'Blacklist: [{blacklist_rules}]')
     util.log(f'Labelling rules: [{label_rules}].')

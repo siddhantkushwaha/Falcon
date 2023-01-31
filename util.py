@@ -3,7 +3,9 @@ import os
 
 from viper.customLogging import get_logger
 
-logger = get_logger('falcon', log_level=25)
+import params
+
+logger = get_logger('falcon', log_level=25, path=params.root_dir)
 
 
 def log(msg):
@@ -16,14 +18,14 @@ def error(msg):
 
 def save_mail_to_cache(mail):
     mail_id = mail['id']
-    pt = os.path.join('dump', f'{mail_id}.json')
+    pt = os.path.join(params.root_dir, 'dump', f'{mail_id}.json')
     os.makedirs(os.path.dirname(pt), exist_ok=True)
     with open(pt, 'w') as fp:
         fp.write(json.dumps(mail))
 
 
 def get_mail_from_cache(mail_id):
-    pt = os.path.join('dump', f'{mail_id}.json')
+    pt = os.path.join(params.root_dir, 'dump', f'{mail_id}.json')
     if os.path.exists(pt):
         with open(pt, 'rb') as fp:
             mail = json.load(fp)
