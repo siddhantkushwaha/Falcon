@@ -18,6 +18,7 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
     sender = sender.lower().strip()
     labels = {i.lower() for i in labels}
     tags = {i.lower() for i in tags}
+    content = f'{subject} {text}'.lower()
 
     minute = 60
     hour = 60 * minute
@@ -30,13 +31,7 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
 
 
 def get_mail(falcon_client, mail_id):
-    mail = util.get_mail_from_cache(mail_id)
-    if mail is not None:
-        return mail
-
-    mail = falcon_client.gmail.get_mail(mail_id)
-    util.save_mail_to_cache(mail)
-    return mail
+    return falcon_client.gmail.get_mail(mail_id)
 
 
 def consolidate(falcon_client, main_query):
@@ -205,7 +200,6 @@ def cleanup(email, main_query, num_days):
                 for label_name in add_label_ids:
                     mail_full['labelIds'].append(label_name)
 
-        util.save_mail_to_cache(mail_full)
         time.sleep(0.5)
 
     consolidate(falcon_client, main_query)
@@ -213,13 +207,14 @@ def cleanup(email, main_query, num_days):
 
 if __name__ == '__main__':
     try:
-        num_days = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+        num_days = int(sys.argv[1]) if len(sys.argv) > 1 else -1
         if num_days == -1:
-            num_days = 10000
+            num_days = 4
 
         util.log(f'Running cleanup on emails in last [{num_days}] days.')
 
         for em in params.emails:
             cleanup(email=em, main_query=params.emails[em], num_days=num_days)
+
     except Exception as exp:
         util.error(exp)

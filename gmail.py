@@ -84,6 +84,9 @@ def process_mail_dic(mail):
         else:
             util.log(f'Unseen mime-type found [{mime_type}].')
 
+    if unsubscribe_option is not None and len(unsubscribe_option) == 0:
+        unsubscribe_option = None
+
     processed_data = {
         'Id': str(mail_id),
         'Sender': sender,
