@@ -27,6 +27,7 @@ def process_mail_dic(mail):
     unsubscribe_option = None
     files = []
     attachment_ids = []
+    html_parts = []
 
     for part in mail['payloads']:
 
@@ -61,22 +62,30 @@ def process_mail_dic(mail):
             continue
 
         data = base64.urlsafe_b64decode(data).decode()
-        # with open('data/m.html', 'w') as fp:
-        #     fp.write(data)
-
         if 'html' in mime_type:
-            # prefer text from html over text from html
-            soup = BeautifulSoup(data, 'lxml')
-            text = soup.text
+            while len(data) > 0:
+                html_end = data.find('</html>')
+                if html_end == -1:
+                    data.find('</HTML>')
+                if html_end == -1:
+                    break
+                html_end = html_end + len('</html>')
+                html_part = data[:html_end]
+                html_parts.append(html_part)
+                data = data[html_end:]
 
-            # double check in html content to see if something's found
-            if unsubscribe_option is None:
-                checklist = ['opt-out', 'unsubscribe', 'edit your notification settings']
-                for link in soup.find_all('a', href=True):
-                    link_text = link.text.strip().lower()
-                    if any(item in link_text for item in checklist):
-                        unsubscribe_option = link['href']
-                        break
+            for html_part in html_parts:
+                soup = BeautifulSoup(html_part, 'lxml')
+                text = soup.text
+
+                # double check in html content to see if something's found
+                if unsubscribe_option is None:
+                    checklist = ['opt-out', 'unsubscribe', 'edit your notification settings']
+                    for link in soup.find_all('a', href=True):
+                        link_text = link.text.strip().lower()
+                        if any(item in link_text for item in checklist):
+                            unsubscribe_option = link['href']
+                            break
 
         elif mime_type == 'text/plain':
             if text is None:
@@ -95,7 +104,8 @@ def process_mail_dic(mail):
         'Unsubscribe': unsubscribe_option,
         'Files': files,
         'AttachmentIds': attachment_ids,
-        'DateTime': date_time
+        'DateTime': date_time,
+        'Htmls': html_parts
     }
 
     return processed_data

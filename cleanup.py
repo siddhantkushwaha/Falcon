@@ -209,7 +209,7 @@ if __name__ == '__main__':
     try:
         num_days = int(sys.argv[1]) if len(sys.argv) > 1 else -1
         if num_days == -1:
-            num_days = 4
+            num_days = 7
 
         util.log(f'Running cleanup on emails in last [{num_days}] days.')
 
