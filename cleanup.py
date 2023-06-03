@@ -16,9 +16,15 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
     """
 
     sender = sender.lower().strip()
+    sender_alias = sender.split('@')[0]
+    sender_domain = sender.split('@')[1]
+
     labels = {i.lower() for i in labels}
     tags = {i.lower() for i in tags}
-    content = f'{subject} {text}'.lower()
+
+    subject = subject.lower().strip()
+    text = text.lower().strip()
+    content = f'{subject} {text}'
 
     minute = 60
     hour = 60 * minute
@@ -83,7 +89,7 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
     curr_time = int(time.time())
 
     mail_processed = gmail.process_mail_dic(mail)
-    sender = mail_processed['Sender'].lower()
+    sender = mail_processed['Sender']
     subject = mail_processed['Subject']
     text = mail_processed['Text']
     timediff = curr_time - int(mail_processed['DateTime'].timestamp())

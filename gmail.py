@@ -38,6 +38,7 @@ def process_mail_dic(mail):
             # Get sender email
             if header_name == 'from':
                 sender = header_value.split(' ')[-1].strip('<>')
+                sender = util.clean_sender(sender)
 
             elif header_name == 'subject':
                 subject = header_value

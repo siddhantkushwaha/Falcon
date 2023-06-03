@@ -1,5 +1,6 @@
 import json
 import os
+import re
 
 from viper.customLogging import get_logger
 
@@ -57,3 +58,14 @@ def set_key(obj, keys, val):
         obj = child
 
     obj[keys[-1]] = val
+
+
+def clean_sender(sender):
+    sender_alias = sender.split('@')[0]
+    sender_alias = re.sub(r'[\-. ]+', '', sender_alias)
+
+    sender_domain = sender.split('@')[1]
+    sender_domain = re.sub(r'[\- ]+', '', sender_domain)
+
+    sender = f'{sender_alias}@{sender_domain}'
+    return sender
