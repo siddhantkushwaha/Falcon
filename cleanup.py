@@ -10,30 +10,40 @@ from db.models import Rule
 from falcon import FalconClient
 
 
+def lower_strip(string):
+    if string is None:
+        return ''
+    return string.strip().lower()
+
+
 def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
-    """
-        variables needed in args for eval() to work
-    """
+    try:
+        """
+            variables needed in args for eval() to work
+        """
 
-    sender = sender.lower().strip()
-    sender_alias = sender.split('@')[0]
-    sender_domain = sender.split('@')[1]
+        sender = lower_strip(sender)
+        sender_alias = sender.split('@')[0]
+        sender_domain = sender.split('@')[1]
 
-    labels = {i.lower() for i in labels}
-    tags = {i.lower() for i in tags}
+        labels = {i.lower() for i in labels}
+        tags = {i.lower() for i in tags}
 
-    subject = subject.lower().strip()
-    text = text.lower().strip()
-    content = f'{subject} {text}'
+        subject = lower_strip(subject)
+        text = lower_strip(text)
+        content = f'{subject} {text}'
 
-    minute = 60
-    hour = 60 * minute
-    day = 24 * hour
-    week = 7 * day
-    month = 30 * day
-    year = 365 * day
+        minute = 60
+        hour = 60 * minute
+        day = 24 * hour
+        week = 7 * day
+        month = 30 * day
+        year = 365 * day
 
-    return eval(clause, {}, locals())
+        return eval(clause, {}, locals())
+    except Exception as e:
+        print(e, sender)
+        return False
 
 
 def get_mail(falcon_client, mail_id):
@@ -62,7 +72,7 @@ def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name
     curr_time = int(time.time())
 
     mail_processed = gmail.process_mail_dic(mail)
-    sender = mail_processed['Sender'].lower()
+    sender = lower_strip(mail_processed['Sender'])
     subject = mail_processed['Subject']
     text = mail_processed['Text']
     timediff = curr_time - int(mail_processed['DateTime'].timestamp())
@@ -215,7 +225,7 @@ if __name__ == '__main__':
     try:
         num_days = int(sys.argv[1]) if len(sys.argv) > 1 else -1
         if num_days == -1:
-            num_days = 7
+            num_days = 30
 
         util.log(f'Running cleanup on emails in last [{num_days}] days.')
 
@@ -224,3 +234,4 @@ if __name__ == '__main__':
 
     except Exception as exp:
         util.error(exp)
+        print(exp)

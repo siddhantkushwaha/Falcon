@@ -16,7 +16,7 @@ from falcon import FalconClient
 def query():
     falcon_client = FalconClient(email=list(params.emails.keys())[0])
 
-    mails = falcon_client.gmail.list_mails(query='from:team@m.ngrok.com', max_pages=1)
+    mails = falcon_client.gmail.list_mails(query='from:connect@wakefit.co.in', max_pages=1)
     for mail in mails:
         mail_id = mail['id']
         mail_full = falcon_client.gmail.get_mail(mail_id)
@@ -36,7 +36,10 @@ def query():
 def write_rules():
     db = get_db()
     for row in [
-        ['label:+notification', "'noreply' in sender", 'all'],
+        ['label:+notification', "'dear investor' in content", 'all'],
+        ['label:+notification', "'dear shareholder' in content", 'all'],
+        ['label:+notification', "'evoting' in content", 'all'],
+        ['label:+notification', "'e-voting' in content", 'all'],
     ]:
         print('-'.join(row))
         rule = Rule(
@@ -50,5 +53,5 @@ def write_rules():
 
 
 if __name__ == '__main__':
-    # query()
-    write_rules()
+    query()
+    # write_rules()
