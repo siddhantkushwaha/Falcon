@@ -42,7 +42,7 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
 
         return eval(clause, {}, locals())
     except Exception as e:
-        print(e, sender)
+        util.error(f'{sender}:[{e}]')
         return False
 
 
@@ -234,4 +234,3 @@ if __name__ == '__main__':
 
     except Exception as exp:
         util.error(exp)
-        print(exp)
