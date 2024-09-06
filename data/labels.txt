@@ -1,7 +1,5 @@
-banking
 travel
-marketing
-personal
+promotional_marketing
 order
 delivery
 investment
@@ -16,6 +14,11 @@ recruitment
 job_offer
 statement
 bill
+booking
+travel
 ticket
 invoice
 invitation
+social_media
+itinerary
+evoting

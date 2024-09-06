@@ -1,15 +1,18 @@
-Please help with labelling the emails in by inbox.
+Please help with labelling the emails in by inbox accurately and precisely. Use your best judgement.
 
 I need you to label the email given below with these labels:
 <labels></labels>
 
+Note that if none of the above labels apply, you may return a single label in the json array called 'none'.
+
 Note that the email can be associated with multiple labels. But all labels should strictly be within the list.
 
 Please return only labels, as a json array. Please do not return any text other than the json array. This is a strict constraint.
+Remember to adhere strictly adhere to this format
 Each output should look exactly like below:
 "[
     "sample_label1",
     "sample_label2"
 ]"
 
-The subject of the email is <subject></subject>, the snippet of the email is <snippet></snippet>, and the text content of the email is <content></content>.
+The email is sent by <sender></sender>. The subject of the email is <subject></subject>, the snippet of the email is <snippet></snippet>, and the text content of the email is <content></content>.
