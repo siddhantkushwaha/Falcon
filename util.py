@@ -18,7 +18,7 @@ def error(msg):
 
 
 def save_mail_to_cache(mail):
-    mail_id = mail['id']
+    mail_id = mail.get('id', mail.get('Id'))
     pt = os.path.join(params.root_dir, 'dump', f'{mail_id}.json')
     os.makedirs(os.path.dirname(pt), exist_ok=True)
     with open(pt, 'w') as fp:
@@ -69,3 +69,17 @@ def clean_sender(sender):
 
     sender = f'{sender_alias}@{sender_domain}'
     return sender
+
+
+def clean_text(text):
+    if text is None:
+        return ''
+    text = text.replace('\r', '\n')
+    # Replace multiple newlines with a single newline
+    text = re.sub(r'\n+', '\n', text)
+    # Replace multiple spaces with a single space
+    text = re.sub(r' +', ' ', text)
+    # Replace multiple tabs with a single tab
+    text = re.sub(r'\t+', '\t', text)
+    # Strip leading/trailing whitespace (optional)
+    return text.strip()

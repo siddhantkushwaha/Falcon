@@ -106,7 +106,8 @@ def process_mail_dic(mail):
         'Files': files,
         'AttachmentIds': attachment_ids,
         'DateTime': date_time,
-        'Htmls': html_parts
+        'Htmls': html_parts,
+        'Snippet': mail['snippet']
     }
 
     return processed_data
