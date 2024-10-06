@@ -170,6 +170,16 @@ def cleanup(email, main_query, num_days):
 
         mail_full = get_mail(falcon_client, mail_id)
 
+        # --------------- code to dump
+        # pm = gmail.process_mail_dic(mail_full)
+        # pm['DateTime'] = int(pm['DateTime'].timestamp())
+        # pm['Email'] = email
+        # util.save_mail_to_cache(pm)
+        #
+        # # print(pm)
+        # continue
+        # -----------------
+
         move_to_trash = should_delete_email(
             mail_full,
             blacklist_rules,

@@ -17,7 +17,7 @@ def get_predefined_labels():
     return labels
 
 
-def generate_prompt(labels,sender, subject, snippet, email_content):
+def generate_prompt(labels, sender, subject, snippet, email_content):
     with open(os.path.join(params.data_dir, 'prompt.txt'), 'r') as fp:
         content = fp.read()
     prompt = content.strip()
@@ -75,7 +75,7 @@ def process_dump():
             labels=predefined_labels,
             sender=mail['Sender'],
             subject=mail['Subject'],
-            snippet=mail['Text'],
+            snippet=mail['Snippet'],
             # email_content=mail['Text']
             email_content=''
         )

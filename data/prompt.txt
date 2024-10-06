@@ -5,7 +5,7 @@ I need you to label the email given below with these labels:
 
 Note that if none of the above labels apply, you may return a single label in the json array called 'none'.
 
-Note that the email can be associated with multiple labels. But all labels should strictly be within the list.
+Note that the email can be associated with multiple labels in order of relevance. But all labels should strictly be within the list.
 
 Please return only labels, as a json array. Please do not return any text other than the json array. This is a strict constraint.
 Remember to adhere strictly adhere to this format
