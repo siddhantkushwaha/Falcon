@@ -16,7 +16,7 @@ def lower_strip(string):
     return string.strip().lower()
 
 
-def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
+def evaluate_clause(clause, sender, subject, text, labels, tags, timediff, snippet):
     try:
         """
             variables needed in args for eval() to work
@@ -30,8 +30,10 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
         tags = {i.lower() for i in tags}
 
         subject = lower_strip(subject)
+        snippet = lower_strip(snippet)
         text = lower_strip(text)
-        content = f'{subject} {text}'
+        subject_snippet = f'{subject} {snippet}'
+        content = f'{subject} {snippet} {text}'
 
         minute = 60
         hour = 60 * minute
@@ -40,7 +42,9 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff):
         month = 30 * day
         year = 365 * day
 
-        return eval(clause, {}, locals())
+        locals_dict = locals()
+
+        return eval(clause, locals_dict, {})
     except Exception as e:
         util.error(f'{sender}:[{e}]')
         return False
@@ -75,6 +79,7 @@ def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name
     sender = lower_strip(mail_processed['Sender'])
     subject = mail_processed['Subject']
     text = mail_processed['Text']
+    snippet = mail_processed['Snippet']
     timediff = curr_time - int(mail_processed['DateTime'].timestamp())
     labels = get_label_names(mail, label_id_to_name_mapping)
     tags = set()
@@ -83,12 +88,12 @@ def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name
         tags.add('unsubscribe')
 
     for q in whitelist_rules:
-        if evaluate_clause(q, sender, subject, text, labels, tags, timediff):
+        if evaluate_clause(q, sender, subject, text, labels, tags, timediff, snippet):
             util.log(f'Do not delete since [{q}] evaluates to True.')
             return False
 
     for q in blacklist_rules:
-        if evaluate_clause(q, sender, subject, text, labels, tags, timediff):
+        if evaluate_clause(q, sender, subject, text, labels, tags, timediff, snippet):
             util.log(f'Delete since [{q}] evaluates to True.')
             return True
 
@@ -102,6 +107,7 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
     sender = mail_processed['Sender']
     subject = mail_processed['Subject']
     text = mail_processed['Text']
+    snippet = mail_processed['Snippet']
     timediff = curr_time - int(mail_processed['DateTime'].timestamp())
     labels = get_label_names(mail, label_id_to_name_mapping)
     tags = set()
@@ -115,7 +121,7 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
         label_op_type = label_out[0]
         label_name = label_out[1:]
 
-        if evaluate_clause(q, sender, subject, text, labels, tags, timediff):
+        if evaluate_clause(q, sender, subject, text, labels, tags, timediff, snippet):
             if label_op_type == '+':
                 if label_name not in labels:
                     util.log(f'Add label [{label_name}] since [{q}] evaluates to True.')
@@ -235,11 +241,11 @@ if __name__ == '__main__':
     try:
         num_days = int(sys.argv[1]) if len(sys.argv) > 1 else -1
         if num_days == -1:
-            num_days = 30
+            num_days = 90
 
         util.log(f'Running cleanup on emails in last [{num_days}] days.')
 
-        for em in params.emails:
+        for em in list(params.emails):
             cleanup(email=em, main_query=params.emails[em], num_days=num_days)
 
     except Exception as exp:
