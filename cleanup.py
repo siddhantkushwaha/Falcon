@@ -10,10 +10,10 @@ from db.models import Rule
 from falcon import FalconClient
 
 
-def lower_strip(string):
+def lower_strip_clean(string):
     if string is None:
         return ''
-    return string.strip().lower()
+    return util.clean_text(string).lower()
 
 
 def evaluate_clause(clause, sender, subject, text, labels, tags, timediff, snippet):
@@ -22,16 +22,16 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff, snipp
             variables needed in args for eval() to work
         """
 
-        sender = lower_strip(sender)
+        sender = lower_strip_clean(sender)
         sender_alias = sender.split('@')[0]
         sender_domain = sender.split('@')[1]
 
         labels = {i.lower() for i in labels}
         tags = {i.lower() for i in tags}
 
-        subject = lower_strip(subject)
-        snippet = lower_strip(snippet)
-        text = lower_strip(text)
+        subject = lower_strip_clean(subject)
+        snippet = lower_strip_clean(snippet)
+        text = lower_strip_clean(text)
         subject_snippet = f'{subject} {snippet}'
         content = f'{subject} {snippet} {text}'
 
@@ -76,7 +76,7 @@ def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name
     curr_time = int(time.time())
 
     mail_processed = gmail.process_mail_dic(mail)
-    sender = lower_strip(mail_processed['Sender'])
+    sender = lower_strip_clean(mail_processed['Sender'])
     subject = mail_processed['Subject']
     text = mail_processed['Text']
     snippet = mail_processed['Snippet']
@@ -125,10 +125,12 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
             if label_op_type == '+':
                 if label_name not in labels:
                     util.log(f'Add label [{label_name}] since [{q}] evaluates to True.')
+                    labels.add(label_name)
                     add_labels.append(label_name)
             elif label_op_type == '-':
                 if label_name in labels:
                     util.log(f'Remove label [{label_name}] since [{q}] evaluates to True.')
+                    labels.remove(label_name)
                     remove_labels.append(label_name)
             else:
                 raise Exception(f'Invalid rule out [{label_out}].')
@@ -145,10 +147,12 @@ def cleanup(email, main_query, num_days):
     blacklist_rules = {i.query for i in db.session.query(Rule).filter(get_query('blacklist')).all()}
 
     whitelist_rules = {i.query for i in db.session.query(Rule).filter(get_query('whitelist')).all()}
+
+    # For safety, I have kept this hard-coded
     whitelist_rules.add("'starred' in labels")
 
-    label_rules = {(i.query, i.type.split(':')[1]) for i in db.session.query(Rule).filter(get_query('label')).all()}
-    label_rules.add(("'important' in labels", '-IMPORTANT'))
+    label_rules = {(i.query, i.type.split(':')[1]) for i in
+                   db.session.query(Rule).filter(get_query('label')).order_by(Rule.order).all()}
 
     util.log(f'Blacklist: [{blacklist_rules}]')
     util.log(f'Labelling rules: [{label_rules}].')
@@ -193,10 +197,7 @@ def cleanup(email, main_query, num_days):
             created_label_ids
         )
 
-        if move_to_trash:
-            falcon_client.gmail.move_to_trash(mail_id)
-
-        else:
+        if not move_to_trash:
             add_label_names = []
             remove_label_names = []
 
@@ -231,6 +232,16 @@ def cleanup(email, main_query, num_days):
                     mail_full['labelIds'].remove(label_name)
                 for label_name in add_label_ids:
                     mail_full['labelIds'].append(label_name)
+
+            move_to_trash = should_delete_email(
+                mail_full,
+                blacklist_rules,
+                whitelist_rules,
+                created_label_ids
+            )
+
+        if move_to_trash:
+            falcon_client.gmail.move_to_trash(mail_id)
 
         time.sleep(0.5)
 
