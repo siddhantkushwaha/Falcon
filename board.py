@@ -5,12 +5,11 @@
 """
 from pprint import pprint
 
-import gmail
 import params
 import util
 from db.database import get_db
 from db.models import Rule
-from falcon import FalconClient
+from falcon import FalconClient, process_gmail_dic
 
 
 def query():
@@ -23,7 +22,7 @@ def query():
 
         util.save_mail_to_cache(mail_full)
 
-        mail_processed = gmail.process_mail_dic(mail_full)
+        mail_processed = process_gmail_dic(mail_full)
         sender = mail_processed['Sender'].lower()
         unsub = mail_processed['Unsubscribe']
         htmls = mail_processed['Htmls']

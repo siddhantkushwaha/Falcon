@@ -2,12 +2,11 @@ import sys
 import time
 from datetime import datetime, timedelta
 
-import gmail
 import params
 import util
 from db.database import get_db
 from db.models import Rule
-from falcon import FalconClient
+from falcon import FalconClient, process_gmail_dic
 
 
 def lower_strip_clean(string):
@@ -75,7 +74,7 @@ def get_label_names(mail, label_id_to_name_mapping):
 def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name_mapping):
     curr_time = int(time.time())
 
-    mail_processed = gmail.process_mail_dic(mail)
+    mail_processed = process_gmail_dic(mail)
     sender = lower_strip_clean(mail_processed['Sender'])
     subject = mail_processed['Subject']
     text = mail_processed['Text']
@@ -103,7 +102,7 @@ def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name
 def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_name_mapping):
     curr_time = int(time.time())
 
-    mail_processed = gmail.process_mail_dic(mail)
+    mail_processed = process_gmail_dic(mail)
     sender = mail_processed['Sender']
     subject = mail_processed['Subject']
     text = mail_processed['Text']

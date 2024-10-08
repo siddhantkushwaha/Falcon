@@ -7,6 +7,9 @@ model
 modelinuse
 downloads
 dump
+venv
+.venv
+gmail_tokens
 
 *.json
 *.csv
