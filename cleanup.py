@@ -150,8 +150,8 @@ def cleanup(email, main_query, num_days):
     # For safety, I have kept this hard-coded
     whitelist_rules.add("'starred' in labels")
 
-    label_rules = {(i.query, i.type.split(':')[1]) for i in
-                   db.session.query(Rule).filter(get_query('label')).order_by(Rule.order).all()}
+    label_rules = [(i.query, i.type.split(':')[1]) for i in
+                   db.session.query(Rule).filter(get_query('label')).order_by(Rule.order).all()]
 
     util.log(f'Blacklist: [{blacklist_rules}]')
     util.log(f'Labelling rules: [{label_rules}].')
