@@ -18,3 +18,4 @@ gmail_tokens
 **logs
 
 **__pycache__
+*.pem
