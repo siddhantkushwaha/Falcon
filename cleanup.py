@@ -1,3 +1,4 @@
+import getpass
 import sys
 import time
 from datetime import datetime, timedelta
@@ -135,7 +136,7 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
                 raise Exception(f'Invalid rule out [{label_out}].')
 
 
-def cleanup(email, main_query, num_days):
+def cleanup(email, main_query, num_days, key):
     util.log(f'Cleanup triggered for {email} - {main_query}.')
 
     db = get_db()
@@ -156,7 +157,7 @@ def cleanup(email, main_query, num_days):
     util.log(f'Blacklist: [{blacklist_rules}]')
     util.log(f'Labelling rules: [{label_rules}].')
 
-    falcon_client = FalconClient(email=email)
+    falcon_client = FalconClient(email=email, key=key)
 
     get_query = main_query
     if get_query is None:
@@ -251,12 +252,16 @@ if __name__ == '__main__':
     try:
         num_days = int(sys.argv[1]) if len(sys.argv) > 1 else -1
         if num_days == -1:
-            num_days = 90
+            num_days = 2
+
+        key = sys.argv[2] if len(sys.argv) > 2 else None
+        if key is None:
+            key = getpass.getpass("Please provide secret key: ")
 
         util.log(f'Running cleanup on emails in last [{num_days}] days.')
 
         for em in list(params.emails):
-            cleanup(email=em, main_query=params.emails[em], num_days=num_days)
+            cleanup(email=em, main_query=params.emails[em], num_days=num_days, key=key)
 
     except Exception as exp:
         util.error(exp)
