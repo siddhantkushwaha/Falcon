@@ -108,5 +108,5 @@ def process_gmail_dic(mail):
 class FalconClient:
     def __init__(self, email, key):
         self.email = email
-        self.gmail = GmailAPI(self.email, key, root_dir)
+        self.gmail = GmailAPI(self.email, root_dir, key)
         self.gmail.auth()
