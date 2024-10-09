@@ -5,6 +5,7 @@ from dateutil.parser import parse
 from google_py_apis.gmail_api import GmailAPI
 
 import util
+from params import root_dir
 from util import get_key
 
 
@@ -107,5 +108,5 @@ def process_gmail_dic(mail):
 class FalconClient:
     def __init__(self, email, key):
         self.email = email
-        self.gmail = GmailAPI(self.email, key)
+        self.gmail = GmailAPI(self.email, key, root_dir)
         self.gmail.auth()
