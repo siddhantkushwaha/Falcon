@@ -40,7 +40,7 @@ def update_rules_from_csv():
         order = row['order']
         r_args = row['args']
 
-        if len(r_args.strip()) == 0:
+        if r_args is not None and len(str(r_args).strip()) == 0:
             r_args = None
 
         rule_obj = db.session.query(Rule).filter_by(id=r_id).first()
