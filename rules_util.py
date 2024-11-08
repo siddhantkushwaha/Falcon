@@ -1,0 +1,53 @@
+import os.path
+
+import pandas as pd
+
+from db.database import get_db
+from db.models import Rule
+from params import data_dir
+
+csv_file_path = os.path.join(data_dir, 'rules.csv')
+
+
+def dump_rules():
+    db = get_db()
+    results = db.session.query(Rule).order_by(Rule.type).all()
+    data = [result.__dict__ for result in results]
+    for row in data:
+        row.pop('_sa_instance_state', None)
+    df = pd.DataFrame(data)
+    df.to_csv(os.path.join(data_dir, csv_file_path), index=False)
+
+
+def update_rules_from_csv():
+    if not os.path.exists(csv_file_path):
+        return
+
+    db = get_db()
+    df = pd.read_csv(csv_file_path)
+
+    for i, row in df.iterrows():
+
+        r_id = row['id']
+        r_type = row['type']
+        query = row['query']
+        apply_to = row['apply_to']
+        order = row['order']
+
+        rule_obj = db.session.query(Rule).filter_by(id=r_id).first()
+
+        if rule_obj is None:
+            rule_obj = Rule(id=r_id, type=r_type, query=query, apply_to=apply_to, order=order)
+            db.session.add(rule_obj)
+        else:
+            rule_obj.type = r_type
+            rule_obj.query = query
+            rule_obj.apply_to = apply_to
+            rule_obj.order = order
+            db.session.add(rule_obj)
+
+        db.session.commit()
+
+
+if __name__ == '__main__':
+    dump_rules()
