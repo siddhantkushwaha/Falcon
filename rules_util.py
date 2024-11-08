@@ -40,17 +40,20 @@ def update_rules_from_csv():
         order = row['order']
         r_args = row['args']
 
+        if len(r_args.strip()) == 0:
+            r_args = None
+
         rule_obj = db.session.query(Rule).filter_by(id=r_id).first()
 
         if rule_obj is None:
-            rule_obj = Rule(id=r_id, type=r_type, query=query, apply_to=apply_to, order=order)
-            db.session.add(rule_obj)
-        else:
-            rule_obj.type = r_type
-            rule_obj.query = query
-            rule_obj.apply_to = apply_to
-            rule_obj.order = order
-            rule_obj.args = r_args
-            db.session.add(rule_obj)
+            rule_obj = Rule(id=r_id)
 
-        db.session.commit()
+        rule_obj.type = r_type
+        rule_obj.query = query
+        rule_obj.apply_to = apply_to
+        rule_obj.order = order
+        rule_obj.args = r_args
+
+        db.session.add(rule_obj)
+
+    db.session.commit()
