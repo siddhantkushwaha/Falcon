@@ -2,6 +2,7 @@ import os.path
 
 import pandas as pd
 
+import util
 from db.database import get_db
 from db.models import Rule
 from params import data_dir
@@ -10,6 +11,8 @@ csv_file_path = os.path.join(data_dir, 'rules.csv')
 
 
 def dump_rules():
+    util.log(f'Dumping rules to: [{csv_file_path}]')
+
     db = get_db()
     results = db.session.query(Rule).order_by(Rule.id).all()
     data = [result.__dict__ for result in results]
@@ -22,6 +25,8 @@ def dump_rules():
 def update_rules_from_csv():
     if not os.path.exists(csv_file_path):
         return
+
+    util.log(f'Reading rules to: [{csv_file_path}]')
 
     db = get_db()
     df = pd.read_csv(csv_file_path)
