@@ -11,7 +11,7 @@ csv_file_path = os.path.join(data_dir, 'rules.csv')
 
 def dump_rules():
     db = get_db()
-    results = db.session.query(Rule).order_by(Rule.type).all()
+    results = db.session.query(Rule).order_by(Rule.id).all()
     data = [result.__dict__ for result in results]
     for row in data:
         row.pop('_sa_instance_state', None)
@@ -50,4 +50,4 @@ def update_rules_from_csv():
 
 
 if __name__ == '__main__':
-    dump_rules()
+    update_rules_from_csv()
