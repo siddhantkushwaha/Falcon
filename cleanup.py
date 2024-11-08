@@ -115,11 +115,16 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
     if mail_processed['Unsubscribe'] is not None:
         tags.add('unsubscribe')
 
-    for q, label_out in label_rules:
+    for q, label_out, args in label_rules:
         label_out = label_out.upper().strip()
 
         label_op_type = label_out[0]
         label_name = label_out[1:]
+
+        if args is None:
+            args = set()
+        else:
+            args = set(args.split('#'))
 
         if evaluate_clause(q, sender, subject, text, labels, tags, timediff, snippet):
             if label_op_type == '+':
@@ -134,6 +139,10 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
                     remove_labels.append(label_name)
             else:
                 raise Exception(f'Invalid rule out [{label_out}].')
+
+            if 'skip_others' in args:
+                util.log('Skipping processing other labelling rules.')
+                break
 
 
 def cleanup(email, main_query, num_days, key):
@@ -151,7 +160,7 @@ def cleanup(email, main_query, num_days, key):
     # For safety, I have kept this hard-coded
     whitelist_rules.add("'starred' in labels")
 
-    label_rules = [(i.query, i.type.split(':')[1]) for i in
+    label_rules = [(i.query, i.type.split(':')[1], i.args) for i in
                    db.session.query(Rule).filter(get_query('label')).order_by(Rule.order).all()]
 
     util.log(f'Blacklist: [{blacklist_rules}]')

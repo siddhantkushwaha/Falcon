@@ -19,6 +19,8 @@ class Rule(Base):
 
     order = Column(Integer, default=0)
 
+    args = Column(String)
+
 
 models = [
     Rule

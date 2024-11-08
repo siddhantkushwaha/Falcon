@@ -38,6 +38,7 @@ def update_rules_from_csv():
         query = row['query']
         apply_to = row['apply_to']
         order = row['order']
+        r_args = row['args']
 
         rule_obj = db.session.query(Rule).filter_by(id=r_id).first()
 
@@ -49,10 +50,7 @@ def update_rules_from_csv():
             rule_obj.query = query
             rule_obj.apply_to = apply_to
             rule_obj.order = order
+            rule_obj.args = r_args
             db.session.add(rule_obj)
 
         db.session.commit()
-
-
-if __name__ == '__main__':
-    update_rules_from_csv()
