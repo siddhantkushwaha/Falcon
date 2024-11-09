@@ -38,5 +38,12 @@
     * `args` - Miscellaneous arguments, coma separated.
         * `skip others` - If given rule evaluates to true, other rules will be skipped.
 - Some sample rules
-  <iframe src="data/rules_sample.md" width="100%"></iframe>
+
+    | type               | query                                                                                                                            |   order | apply_to   |   id |   args |
+    |:-------------------|:---------------------------------------------------------------------------------------------------------------------------------|--------:|:-----------|-----:|-------:|
+    | blacklist          | timediff > day and any(i in labels for i in ['unsubscribe'])                                                                     |   10001 | all        |    1 |    nan |
+    | label:+unsubscribe | 'unsubscribe' in tags                                                                                                            |       2 | all        |    2 |    nan |
+    | label:-important   | True                                                                                                                             |       3 | all        |    3 |    nan |
+    | label:-unread      | any(i in labels for i in ['unsubscribe', 'groceries', 'order', 'notification', 'otp', 'investment', 'transaction', 'statement']) |   10000 | all        |    4 |    nan |
+    | whitelist          | 'starred' in labels   
 
