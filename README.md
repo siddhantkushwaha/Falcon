@@ -45,5 +45,5 @@
     | label:+unsubscribe | 'unsubscribe' in tags                                                                                                            |       2 | all        |    2 |    nan |
     | label:-important   | True                                                                                                                             |       3 | all        |    3 |    nan |
     | label:-unread      | any(i in labels for i in ['unsubscribe', 'groceries', 'order', 'notification', 'otp', 'investment', 'transaction', 'statement']) |   10000 | all        |    4 |    nan |
-    | whitelist          | 'starred' in labels   
+    | whitelist          | 'starred' in labels                                                                                                              |       1 | all        |     5 |    nan |
 
