@@ -124,7 +124,7 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
         if args is None:
             args = set()
         else:
-            args = set(args.split('#'))
+            args = set(args.split(','))
 
         if evaluate_clause(q, sender, subject, text, labels, tags, timediff, snippet):
             if label_op_type == '+':
