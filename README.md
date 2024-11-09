@@ -36,7 +36,7 @@
     * `apply_to` - A coma separated list of email ids or `all`.
     * `order` - Order in which rules will be evaluated for a given email.
     * `args` - Miscellaneous arguments, coma separated.
-        * `skip others` - If current rule evaluates to true, other rules will be skipped.
+        * `skip_others` - If current rule evaluates to true, other rules will be skipped.
 - Some sample rules
 
     | type               | query                                                                                                                            |   order | apply_to   |   id |   args |
