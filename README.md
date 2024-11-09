@@ -8,12 +8,13 @@
       credentials.
     - Move it inside config/.
 - Add emails.json inside `data/`, it should look like data/emails_templates.json
+- Copy `data/rules_sample.csv` to `data/rules.csv` to begin with.
 - Run `python/manage.py --update_rules` to push rules from `data/rules.csv` to SQL db.
 - Run `python/cleanup.py`
 
 ###### Adding more rules to rules.csv
 
-- The rules csv has below fields
+- The rules csv needs below fields
     * `type` - If given query applies to true, this command type will be applied.
         * `blacklist` - Move to trash.
         * `whitelist` - Falcon will skip this email.
@@ -37,4 +38,5 @@
     * `args` - Miscellaneous arguments, coma separated.
         * `skip others` - If given rule evaluates to true, other rules will be skipped.
 - Some sample rules
-  *
+  <iframe src="data/rules_sample.md" width="100%"></iframe>
+

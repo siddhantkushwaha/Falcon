@@ -2,6 +2,7 @@ import json
 import os
 import re
 
+import pandas as pd
 from viper.customLogging import get_logger
 
 import params
@@ -83,3 +84,8 @@ def clean_text(text):
     text = re.sub(r'\t+', '\t', text)
     # Strip leading/trailing whitespace (optional)
     return text.strip()
+
+
+def rules_sample_csv_to_md():
+    df = pd.read_csv(os.path.join(params.data_dir, 'rules_sample.csv'))
+    df.to_markdown(os.path.join(params.data_dir, 'rules_sample.md'), index=False)
