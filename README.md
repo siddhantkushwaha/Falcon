@@ -22,7 +22,8 @@
     * `query` - A python expression that needs to evaluate to true for this rule to be applied. Some variables available for us to work with
       * `sender` - Email ID.
       * `labels` - Label names associated with given email.
-      * `tags` - 
+      * `tags` - These list of tags is populated by Falcon.
+        * `unsubscribe` - Added when Falcon finds an option to unsubscribe from this email, in header or content.
       * `subject` - Email subject.
       * `snippet` - Email snippet.
       * `text` - Email body text.
