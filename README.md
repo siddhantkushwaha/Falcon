@@ -18,25 +18,25 @@
     * `type` - If given query applies to true, this command type will be applied.
         * `blacklist` - Move to trash.
         * `whitelist` - Falcon will skip this email.
-        * `-label:<label-name>` - Given label will be removed from email.
-        * `+label:<label-name>` - Given label will be added to the email. A new label is created if one does not exist already.
+        * `-label:<label-name>` - Specified label will be removed from email.
+        * `+label:<label-name>` - Specified label will be added to the email. A new label is created if one does not exist already.
     * `query` - A python expression that needs to evaluate to true for this rule to be applied. Some variables available for us to work with
       * `sender` - Email ID.
       * `labels` - Label names associated with given email.
-      * `tags` - These list of tags is populated by Falcon.
+      * `tags` - This list of tags is populated by Falcon.
         * `unsubscribe` - Added when Falcon finds an option to unsubscribe from this email, in header or content.
       * `subject` - Email subject.
       * `snippet` - Email snippet.
       * `text` - Email body text.
       * `subject_snippet` - Email subject plus snippet.
       * `content` - Entire email content in text.
-      * `timediff` - How old in the email in seconds.
-      * `day` - Duration of a day in seconds.
-      * `week` - Duration of a week in seconds.
+      * `timediff` - How old is the email, in seconds.
+      * `day` - Number of seconds in a day.
+      * `week` - Number of seconds in a week.
     * `apply_to` - A coma separated list of email ids or `all`.
     * `order` - Order in which rules will be evaluated for a given email.
     * `args` - Miscellaneous arguments, coma separated.
-        * `skip others` - If given rule evaluates to true, other rules will be skipped.
+        * `skip others` - If current rule evaluates to true, other rules will be skipped.
 - Some sample rules
 
     | type               | query                                                                                                                            |   order | apply_to   |   id |   args |
