@@ -18,8 +18,8 @@
     * `type` - If given query applies to true, this command type will be applied.
         * `blacklist` - Move to trash.
         * `whitelist` - Falcon will skip this email.
-        * `-label:<label-name>` - Specified label will be removed from email.
-        * `+label:<label-name>` - Specified label will be added to the email. A new label is created if one does not exist already.
+        * `label:-<label-name>` - Specified label will be removed from email.
+        * `label:+<label-name>` - Specified label will be added to the email. A new label is created if one does not exist already.
     * `query` - A python expression that needs to evaluate to true for this rule to be applied. Some variables available for us to work with
       * `sender` - Email ID.
       * `labels` - Label names associated with given email.
