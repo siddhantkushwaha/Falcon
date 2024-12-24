@@ -1,6 +1,6 @@
 Please help with labelling the emails in by inbox accurately and precisely. Use your best judgement.
 
-The email is sent by <sender></sender>. The subject of the email is <subject></subject>, the snippet of the email is <snippet></snippet>, and the text content of the email is <content></content>.
+The email is sent by <sender></sender>. The subject of the email is <subject></subject>, the snippet of the email is <snippet></snippet>.
 
 I need you to label the email given below with these labels:
 <labels></labels>
