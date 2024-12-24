@@ -96,6 +96,8 @@ def process_dump():
 
         process_email(mail, predefined_labels)
 
+        time.sleep(10)
+
 
 if __name__ == "__main__":
     process_dump()
