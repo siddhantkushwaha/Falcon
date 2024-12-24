@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import ollama
 
 import params
@@ -46,22 +47,41 @@ def process_email(mail, predefined_labels):
         sender=mail["Sender"],
         subject=mail["Subject"],
         snippet=mail["Snippet"],
-        # email_content=mail['Text']
-        email_content="",
+        email_content=mail["Text"],
     )
 
     line_str = "\n" * 2 + "*" * 100 + "\n" * 2
 
-    fp = open(os.path.join(params.dump_dir, f"{mail_id}.llm.txt"), "w")
-    fp.write(prompt)
-    fp.write(line_str)
+    attempt = 1
+    max_attempts = 3
+    wait_time = 5
+    out_labels = []
 
-    text_response = ollama.generate(prompt=prompt, model=MODEL_NAME)["response"]
-    fp.write(text_response)
+    while attempt <= max_attempts and len(out_labels) == 0:
+        if attempt > 1:
+            time.sleep(wait_time)
 
-    fp.close()
+        fp = open(os.path.join(params.dump_dir, f"{mail_id}.llm.txt"), "w")
+        fp.write(prompt)
+        fp.write(line_str)
 
-    print(text_response)
+        text_response = ollama.generate(prompt=prompt, model=MODEL_NAME)["response"]
+        fp.write(text_response)
+        fp.write(line_str)
+
+        for predef_label in predefined_labels:
+            if text_response.find(f'"{predef_label}"') > -1:
+                out_labels.append(predef_label)
+
+        if text_response.find(f'"none"') > -1:
+            out_labels.append("none")
+
+        fp.write("- ".join(out_labels))
+        fp.close()
+
+        attempt += 1
+
+    return out_labels
 
 
 def process_dump():
