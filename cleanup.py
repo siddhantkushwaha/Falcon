@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 
 import params
 import util
+import ollama_lib
 from db.database import get_db
 from db.models import Rule
 from falcon import FalconClient, process_gmail_dic
@@ -64,24 +65,19 @@ def consolidate(falcon_client, main_query):
         time.sleep(0.5)
 
 
-def get_label_ids(mail):
-    return {i for i in mail.get('labelIds', [])}
+def get_label_names(mail_processed, label_id_to_name_mapping):
+    return {label_id_to_name_mapping[i] for i in mail_processed['LabelIds']}
 
 
-def get_label_names(mail, label_id_to_name_mapping):
-    return {label_id_to_name_mapping[i] for i in get_label_ids(mail)}
-
-
-def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name_mapping):
+def should_delete_email(mail_processed, blacklist_rules, whitelist_rules, label_id_to_name_mapping):
     curr_time = int(time.time())
 
-    mail_processed = process_gmail_dic(mail)
     sender = lower_strip_clean(mail_processed['Sender'])
     subject = mail_processed['Subject']
     text = mail_processed['Text']
     snippet = mail_processed['Snippet']
     timediff = curr_time - int(mail_processed['DateTime'].timestamp())
-    labels = get_label_names(mail, label_id_to_name_mapping)
+    labels = get_label_names(mail_processed, label_id_to_name_mapping)
     tags = set()
 
     if mail_processed['Unsubscribe'] is not None:
@@ -100,16 +96,15 @@ def should_delete_email(mail, blacklist_rules, whitelist_rules, label_id_to_name
     return False
 
 
-def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_name_mapping):
+def process_labelling(mail_processed, label_rules, add_labels, remove_labels, label_id_to_name_mapping):
     curr_time = int(time.time())
 
-    mail_processed = process_gmail_dic(mail)
     sender = mail_processed['Sender']
     subject = mail_processed['Subject']
     text = mail_processed['Text']
     snippet = mail_processed['Snippet']
     timediff = curr_time - int(mail_processed['DateTime'].timestamp())
-    labels = get_label_names(mail, label_id_to_name_mapping)
+    labels = get_label_names(mail_processed, label_id_to_name_mapping)
     tags = set()
 
     if mail_processed['Unsubscribe'] is not None:
@@ -144,7 +139,23 @@ def process_labelling(mail, label_rules, add_labels, remove_labels, label_id_to_
                 util.log('Skipping processing other labelling rules.')
                 break
 
+def apply_ai_labels(mail_processed, ai_labels, add_labels, remove_labels, label_id_to_name_mapping):
+    email_labels = get_label_names(mail_processed, label_id_to_name_mapping)
+    
+    out_labels, model_name = ollama_lib.process_email(mail_processed, ai_labels)
 
+    prev_ai_labels = [i for i in email_labels if i.startswith(f'AI/{model_name}'.upper())]
+    new_ai_labels = [f'AI/{model_name}/{label}'.upper() for label in out_labels]
+
+    for label in new_ai_labels:
+        if label not in email_labels:
+            add_labels.append(label)
+
+    for label in prev_ai_labels:
+        if label not in new_ai_labels:
+            remove_labels.append(label)
+
+    
 def cleanup(email, main_query, num_days, key):
     util.log(f'Cleanup triggered for {email} - {main_query}.')
 
@@ -156,6 +167,8 @@ def cleanup(email, main_query, num_days, key):
     blacklist_rules = {i.query for i in db.session.query(Rule).filter(get_query('blacklist')).all()}
 
     whitelist_rules = {i.query for i in db.session.query(Rule).filter(get_query('whitelist')).all()}
+
+    ai_labels = ollama_lib.get_ai_labels()
 
     # For safety, I have kept this hard-coded
     whitelist_rules.add("'starred' in labels")
@@ -181,24 +194,26 @@ def cleanup(email, main_query, num_days, key):
 
     mails = falcon_client.gmail.list_mails(query=get_query, max_pages=10000)
 
-    created_label_names = {label['name']: label['id'] for label in falcon_client.gmail.list_labels()['labels']}
-    created_label_ids = {label['id']: label['name'] for label in falcon_client.gmail.list_labels()['labels']}
+    labels_info = falcon_client.gmail.list_labels()["labels"]
+
+    created_label_names = {label["name"]: label["id"] for label in labels_info}
+    created_label_ids = {label["id"]: label["name"] for label in labels_info}
 
     for mail in mails:
-        mail_id = mail['id']
+        mail_id = mail["id"]
 
         mail_full = get_mail(falcon_client, mail_id)
+        mail_processed = process_gmail_dic(mail_full)
 
         # --------------- code to dump
-        # pm = process_gmail_dic(mail_full)
-        # pm['DateTime'] = int(pm['DateTime'].timestamp())
-        # pm['Email'] = email
-        # util.save_mail_to_cache(pm)
+        # mail_processed['DateTime'] = int(mail_processed['DateTime'].timestamp())
+        # mail_processed['Email'] = email
+        # util.save_mail_to_cache(mail_processed)
         # continue
         # -----------------
 
         move_to_trash = should_delete_email(
-            mail_full,
+            mail_processed,
             blacklist_rules,
             whitelist_rules,
             created_label_ids
@@ -209,24 +224,33 @@ def cleanup(email, main_query, num_days, key):
             remove_label_names = []
 
             process_labelling(
-                mail_full,
+                mail_processed,
                 label_rules,
                 add_label_names,
                 remove_label_names,
                 created_label_ids
             )
 
-            existing_label_ids = get_label_ids(mail_full)
+            if use_llm:
+                apply_ai_labels(mail_processed, ai_labels, add_label_names, remove_label_names, created_label_ids)
+
+            existing_label_ids = mail_processed['LabelIds']
 
             add_label_ids = []
             for label_name in add_label_names:
-                label_id = created_label_names.get(label_name, None)
-                if label_id is None:
-                    util.log(f'Label [{label_name}] not found, creating it.')
-                    label_id = falcon_client.gmail.create_label(label_name)['id']
+                prev_node = ''
+                for label_node in label_name.split('/'):
+                    if len(prev_node) > 0:
+                        label_node = f'{prev_node}/{label_node}'
 
-                    created_label_names[label_name] = label_id
-                    created_label_ids[label_id] = label_name
+                    label_id = created_label_names.get(label_node, None)
+                    if label_id is None:
+                        util.log(f'Label [{label_node}] not found, creating it.')
+                        label_id = falcon_client.gmail.create_label(label_node)['id']
+                        created_label_names[label_node] = label_id
+                        created_label_ids[label_id] = label_node
+                    
+                    prev_node = label_node
 
                 add_label_ids.append(label_id)
 
@@ -241,7 +265,7 @@ def cleanup(email, main_query, num_days, key):
                     mail_full['labelIds'].append(label_name)
 
             move_to_trash = should_delete_email(
-                mail_full,
+                mail_processed,
                 blacklist_rules,
                 whitelist_rules,
                 created_label_ids
@@ -255,17 +279,19 @@ def cleanup(email, main_query, num_days, key):
     consolidate(falcon_client, main_query)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         num_days = int(sys.argv[1]) if len(sys.argv) > 1 else -1
         if num_days == -1:
             num_days = 2
 
         key = sys.argv[2] if len(sys.argv) > 2 else None
-        if key is None:
+        if key is None or key == "#":
             key = getpass.getpass("Please provide secret key: ")
 
-        util.log(f'Running cleanup on emails in last [{num_days}] days.')
+        use_llm = len(sys.argv) > 3 and sys.argv[3] == "1"
+
+        util.log(f"Running cleanup on emails in last [{num_days}] days.")
 
         for em in list(params.emails):
             cleanup(email=em, main_query=params.emails[em], num_days=num_days, key=key)

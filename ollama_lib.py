@@ -9,7 +9,7 @@ import util
 MODEL_NAME = "phi3"
 
 
-def get_predefined_labels():
+def get_ai_labels():
     with open(os.path.join(params.data_dir, "labels.txt"), "r") as fp:
         content = fp.read()
     labels = [i.lower().strip() for i in content.split()]
@@ -39,11 +39,11 @@ def generate_prompt(labels, sender, subject, snippet, email_content):
     return prompt
 
 
-def process_email(mail, predefined_labels):
+def process_email(mail, ai_labels):
     mail_id = mail["Id"]
 
     prompt = generate_prompt(
-        labels=predefined_labels,
+        labels=ai_labels,
         sender=mail["Sender"],
         subject=mail["Subject"],
         snippet=mail["Snippet"],
@@ -54,13 +54,10 @@ def process_email(mail, predefined_labels):
 
     attempt = 1
     max_attempts = 3
-    wait_time = 5
+    wait_time = 60
     out_labels = []
 
     while attempt <= max_attempts and len(out_labels) == 0:
-        if attempt > 1:
-            time.sleep(wait_time)
-
         fp = open(os.path.join(params.dump_dir, f"{mail_id}.llm.txt"), "w")
         fp.write(prompt)
         fp.write(line_str)
@@ -69,7 +66,7 @@ def process_email(mail, predefined_labels):
         fp.write(text_response)
         fp.write(line_str)
 
-        for predef_label in predefined_labels:
+        for predef_label in ai_labels:
             if text_response.find(f'"{predef_label}"') > -1:
                 out_labels.append(predef_label)
 
@@ -79,13 +76,14 @@ def process_email(mail, predefined_labels):
         fp.write("- ".join(out_labels))
         fp.close()
 
+        time.sleep(wait_time)
         attempt += 1
 
-    return out_labels
+    return out_labels, MODEL_NAME
 
 
 def process_dump():
-    predefined_labels = get_predefined_labels()
+    ai_labels = get_ai_labels()
     rpt = os.path.join(params.root_dir, "dump")
     for item in os.listdir(rpt):
         if not item.endswith(".json"):
@@ -94,9 +92,7 @@ def process_dump():
         with open(os.path.join(rpt, item), "r") as fp:
             mail = json.load(fp)
 
-        process_email(mail, predefined_labels)
-
-        time.sleep(10)
+        process_email(mail, ai_labels)
 
 
 if __name__ == "__main__":

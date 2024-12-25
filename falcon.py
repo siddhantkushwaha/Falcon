@@ -99,7 +99,8 @@ def process_gmail_dic(mail):
         'AttachmentIds': attachment_ids,
         'DateTime': date_time,
         'Htmls': html_parts,
-        'Snippet': mail['snippet']
+        'Snippet': mail['snippet'],
+        'LabelIds': {i for i in mail.get('labelIds', [])}
     }
 
     return processed_data
