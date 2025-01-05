@@ -19,3 +19,4 @@ gmail_tokens
 
 **__pycache__
 *.pem
+**.DS_Store
