@@ -5,7 +5,7 @@ Base = declarative_base()
 
 
 class Rule(Base):
-    __tablename__ = 'rule'
+    __tablename__ = "rule"
 
     id = Column(Integer, primary_key=True)
 
@@ -22,6 +22,4 @@ class Rule(Base):
     args = Column(String)
 
 
-models = [
-    Rule
-]
+models = [Rule]

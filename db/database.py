@@ -7,20 +7,20 @@ from db.models import models
 from params import root_dir
 
 
-def get_db(name='db'):
+def get_db(name="db"):
     """
     This function is not thread-safe.
     :param name: name of db file to be created
     :return:
     """
 
-    db_path = os.path.join(root_dir, 'data', f'{name}.sqlite')
+    db_path = os.path.join(root_dir, "data", f"{name}.sqlite")
 
     create_db = False
     if not os.path.exists(db_path):
         create_db = True
 
-    engine_url = 'sqlite:///' + db_path
+    engine_url = "sqlite:///" + db_path
     db = Database(engine_url)
 
     if create_db:
