@@ -229,7 +229,7 @@ def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, lis
     batch_size = llm_config["batch_size"]
     body_max_chars = llm_config["body_max_chars"]
     max_retries = llm_config.get("max_retries", 3)
-    retry_delay = llm_config.get("retry_delay", 1.0)
+    retry_delay = float(llm_config.get("retry_delay", 2.0))
 
     taxonomy = _load_taxonomy(labelling_config["taxonomy_file"])
     taxonomy_str = _format_taxonomy_for_prompt(taxonomy)
