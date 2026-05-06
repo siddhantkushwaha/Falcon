@@ -18,4 +18,11 @@ Assign one or two labels from the taxonomy below to each email.
 {emails}
 
 ## Response Format
-Return ONLY a JSON array.
+Return ONLY a JSON array. One object per email, in the same order as the input.
+Each object has: "id" (the email id) and "labels" (array of 1-2 label strings).
+
+Example:
+[
+  {{"id": "abc123", "labels": ["order"]}},
+  {{"id": "def456", "labels": ["personal", "actionable"]}}
+]
