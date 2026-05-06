@@ -125,7 +125,7 @@ def cleanup(email, main_query, num_days, key):
         ):
             actions.trash_email(falcon_client, mail_id)
 
-        time.sleep(0.5)
+        time.sleep(60)
 
     actions.consolidate_spam(falcon_client)
 

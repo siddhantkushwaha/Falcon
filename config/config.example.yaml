@@ -4,7 +4,7 @@ llm:
     ollama: "phi3"
     google: "gemini-2.0-flash"
   ollama_host: "http://localhost:11434"
-  batch_size: 1  # emails per LLM call (1-3)
+  batch_size: 1
   body_max_chars: 500  # truncated plaintext body length
   google_api_key: ""  # Google AI API key
 
