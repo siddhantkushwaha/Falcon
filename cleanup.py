@@ -45,11 +45,9 @@ def should_delete_email(
 def cleanup(email, main_query, num_days, key):
     util.log(f"Cleanup triggered for {email} - {main_query}.")
 
-    incremental = num_days == 0
-    if incremental:
+    if num_days == 0:
         num_days = 1
-
-    processed_ids = state.load_processed_ids(email) if incremental else set()
+    processed_ids = state.load_processed_ids(email)
 
     config = labeller_mod.load_config()
     pipeline_config = config.get("pipeline", {})
@@ -90,7 +88,7 @@ def cleanup(email, main_query, num_days, key):
     for mail_id, mail_full, mail_processed in iterate_gmail_messages(
         falcon_client, main_query, num_days
     ):
-        already_processed = incremental and mail_id in processed_ids
+        already_processed = mail_id in processed_ids
         existing_label_names = labeller_mod.get_label_names(
             mail_processed, created_label_ids
         )
