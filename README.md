@@ -11,10 +11,10 @@ cleanup.py
   │
   └─ for each email:
         │
-        ├─ Phase 1: Rule-based labelling
+        ├─ Phase 1: Rule-based labelling (labeller.rule_labeller)
         │     └─ evaluate Python expressions → add/remove labels
         │
-        ├─ Phase 2: LLM labelling (labeller.py)
+        ├─ Phase 2: LLM labelling (labeller.llm_labeller)
         │     └─ classify_emails() → AI/* labels (e.g. AI/PERSONAL, AI/OTP)
         │
         ├─ Phase 3: Apply changes (actions.py)
@@ -23,6 +23,8 @@ cleanup.py
         └─ Phase 4: Delete rules
               └─ should_delete_email() → trash if matched
 ```
+
+**Incremental mode (`--days 0`):** skips emails already seen in a previous run. Processed message IDs are persisted per account in `data/history_ids.json` by `state.py`.
 
 ## Quick start
 
@@ -43,29 +45,47 @@ Create OAuth credentials in Google Cloud Console and save to `config/desktop_cre
 cp config/config.example.yaml config/config.yaml
 ```
 
-Edit `config/config.yaml` to set your LLM provider (`ollama` or `google`) and model.
+Edit `config/config.yaml` to set your LLM provider, model, and the email accounts to process:
 
-### Data files
+```yaml
+llm:
+  provider: "ollama"   # or "google"
+  model:
+    ollama: "phi3"
+    google: "gemini-2.0-flash"
+  google_api_key: ""   # Google AI API key (or set via GOOGLE_AI_API_KEY env var)
+
+emails:
+  you@gmail.com: ~                          # no filter — all mail
+  work@domain.com: "-from:*@domain.com"    # external mail only
+```
+
+### Rules
 
 ```bash
-cp data/emails_template.json data/emails.json   # add email → Gmail query mappings
-cp data/rules_sample.csv data/rules.csv          # edit rules to your needs
-python manage.py --update_rules                  # push rules to SQLite DB
+cp data/rules_sample.csv data/rules.csv   # edit to your needs
+python manage.py --update_rules           # push rules to SQLite DB
 ```
 
 ### Run
 
 ```bash
-# Process emails from the last 2 days
+# Process emails from the last 2 days (default)
 python cleanup.py
 
-# Last N days, with encryption key, with LLM enabled
-python cleanup.py [num_days] [key] [1]
+# Specify a window
+python cleanup.py --days 7
+
+# Incremental mode — only process emails not seen in previous runs
+python cleanup.py --days 0
+
+# Provide encryption key inline (otherwise prompted)
+python cleanup.py --days 2 --key mypassphrase
 ```
 
 ## LLM classification
 
-When LLM is enabled (`python cleanup.py 2 mykey 1`), each email is classified against the label taxonomy in `data/labels.yaml`. Results are applied as nested Gmail labels under `AI/` (e.g. `AI/PERSONAL`, `AI/PROMOTIONAL`).
+LLM classification runs unconditionally on every email. Each email is classified against the label taxonomy in `data/labels.yaml`. Results are applied as nested Gmail labels under `AI/` (e.g. `AI/PERSONAL`, `AI/PROMOTIONAL`). Existing `AI/` labels that no longer match are removed.
 
 Configure the provider in `config/config.yaml`:
 
@@ -75,9 +95,10 @@ llm:
   model:
     ollama: "phi3"
     google: "gemini-2.0-flash"
+  batch_size: 1         # emails per LLM call
+  body_max_chars: 500   # truncate body to this length
+  google_api_key: ""    # Google AI API key
 ```
-
-For Google Gemini, set `GOOGLE_AI_API_KEY` in your environment.
 
 ## Rules
 
@@ -117,27 +138,28 @@ The blacklist rule above protects emails the LLM flagged as personal or actionab
 |---|---|
 | `cleanup.py` | CLI entry point — orchestrates the pipeline |
 | `falcon.py` | Gmail API wrapper + email parser |
-| `labeller.py` | LLM classification orchestrator |
+| `labeller.py` | Rule evaluation, LLM classification, shared helpers |
 | `actions.py` | Gmail mutations (label, trash, spam) |
+| `state.py` | Per-account processed-ID persistence for incremental mode |
 | `llm/` | Provider-agnostic LLM client package |
 | `manage.py` | CLI to sync rules between CSV and SQLite |
 | `rules_util.py` | Rule import/export helpers |
 | `db/` | SQLAlchemy models + DB helper |
-| `params.py` | Global paths |
+| `params.py` | Global paths and config loader |
 | `util.py` | Logging and text utilities |
 | `config/config.yaml` | Runtime config (not committed — copy from example) |
 | `config/config.example.yaml` | Config template |
 | `data/labels.yaml` | LLM label taxonomy |
 | `data/prompts/labelling.txt` | LLM prompt template |
 | `data/rules.csv` | Rule definitions (edit this, then run manage.py) |
-| `data/emails.json` | Email address → Gmail query mapping |
+| `data/history_ids.json` | Processed email IDs for incremental mode (auto-generated) |
 
 ## Commands
 
 ```bash
-python manage.py --update_rules   # CSV → SQLite
-python manage.py --dump_rules     # SQLite → CSV
-python cleanup.py [days] [key] [use_llm: 1|0]
+python manage.py --update_rules           # CSV → SQLite
+python manage.py --dump_rules             # SQLite → CSV
+python cleanup.py [--days N] [--key KEY]  # run pipeline
 ```
 
 ## License
