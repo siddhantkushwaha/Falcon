@@ -14,6 +14,10 @@ labelling:
   prompt_file: "data/prompts/labelling.txt"
   taxonomy_file: "data/labels.yaml"
 
+pipeline:
+  sleep_after_label: 0     # seconds between phase 3 (label apply) and phase 4 (delete eval)
+  sleep_between_emails: 0.5  # seconds between each email in the pipeline loop
+
 # Map of email address -> Gmail search query (null means no filter)
 emails:
   em1@gmail.com: ~

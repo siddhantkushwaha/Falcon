@@ -52,6 +52,9 @@ def cleanup(email, main_query, num_days, key):
     processed_ids = state.load_processed_ids(email) if incremental else set()
 
     config = labeller_mod.load_config()
+    pipeline_config = config.get("pipeline", {})
+    sleep_after_label = float(pipeline_config.get("sleep_after_label", 0))
+    sleep_between_emails = float(pipeline_config.get("sleep_between_emails", 0.5))
     db = get_db()
 
     def get_query(rule_type):
@@ -118,7 +121,7 @@ def cleanup(email, main_query, num_days, key):
                 created_label_ids,
             )
 
-            time.sleep(0)
+            time.sleep(sleep_after_label)
 
             state.mark_processed(email, mail_id)
 
@@ -128,7 +131,7 @@ def cleanup(email, main_query, num_days, key):
         ):
             actions.trash_email(falcon_client, mail_id)
 
-        time.sleep(0.5)
+        time.sleep(sleep_between_emails)
 
     actions.consolidate_spam(falcon_client)
 
