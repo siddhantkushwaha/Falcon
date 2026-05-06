@@ -117,7 +117,7 @@ def cleanup(email, main_query, num_days, key):
                 created_label_ids,
             )
 
-            time.sleep(60)
+            time.sleep(0)
 
             state.mark_processed(email, mail_id)
 

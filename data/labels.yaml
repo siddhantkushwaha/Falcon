@@ -1,67 +1,202 @@
 labels:
   personal:
-    description: "Direct human-to-human email, not automated"
+    description: "Direct person-to-person communication written by a human"
     attention: high
-    examples: "friend writing, colleague asking something, family"
+    includes:
+      - friend emails
+      - colleague requests
+      - family messages
+    excludes:
+      - automated notifications
+      - marketing emails
+      - system-generated messages
 
   actionable:
-    description: "Requires a response or action from the recipient"
+    description: "Requires the recipient to take a real action or respond"
     attention: high
-    examples: "approval requests, RSVPs, questions needing answers, form submissions"
+    includes:
+      - approvals
+      - RSVPs
+      - form submissions
+      - confirmations
+      - requests needing response
+    excludes:
+      - informational notifications
+      - login alerts
+      - receipts
+      - passive updates
+    notes: "Only use when user action is genuinely expected"
 
   security:
-    description: "Security alerts, password resets, breach notifications, suspicious activity"
+    description: "Security-sensitive account events or warnings"
     attention: high
+    includes:
+      - password resets
+      - suspicious login alerts
+      - breach notifications
+      - account recovery
+      - MFA setup alerts
+    excludes:
+      - routine login notifications
+      - generic account activity updates
 
   government:
-    description: "Tax notices, voting, official documents, regulatory compliance"
+    description: "Official government or regulatory communication"
     attention: high
+    includes:
+      - tax notices
+      - regulatory compliance
+      - voting information
+      - official documents
 
   recruitment:
-    description: "Job offers, interview scheduling, application updates"
+    description: "Real hiring or job application workflow communication"
     attention: medium
+    includes:
+      - interview scheduling
+      - recruiter outreach
+      - application updates
+      - offer letters
+    excludes:
+      - hiring campaigns
+      - job advertisements
+      - career newsletters
 
   travel:
-    description: "Flight/hotel/train bookings, boarding passes, itineraries, cancellations"
+    description: "Actual travel bookings or itinerary-related communication"
     attention: medium
+    includes:
+      - flight bookings
+      - hotel reservations
+      - boarding passes
+      - cancellations
+      - itinerary updates
+    excludes:
+      - travel promotions
+      - vacation ads
+      - airline discounts
 
   otp:
-    description: "One-time passwords, 2FA codes, login verification codes"
+    description: "Short-lived verification or authentication codes"
     attention: low
-    notes: "Ephemeral — only useful for a few minutes"
+    includes:
+      - one-time passwords
+      - verification codes
+      - login authentication codes
+    notes: "Ephemeral and time-sensitive"
 
   transaction:
-    description: "Payment confirmations, UPI transfers, debits, credits, refunds"
+    description: "Single financial transaction events"
     attention: low
+    includes:
+      - payment confirmations
+      - refunds
+      - UPI transfers
+      - debit alerts
+      - credit alerts
+    excludes:
+      - monthly statements
+      - invoices
+      - bills
 
   statement:
-    description: "Bank statements, credit card statements, bills, invoices"
+    description: "Periodic bank or credit card account summaries"
     attention: low
+    includes:
+      - monthly bank statements
+      - credit card statements
+      - account summaries
+    excludes:
+      - invoices
+      - bills
+      - payment reminders
+
+  billing:
+    description: "Invoices, bills, or payment due communication"
+    attention: low
+    includes:
+      - utility bills
+      - SaaS invoices
+      - payment due notices
+      - receipts requesting payment
+    excludes:
+      - bank statements
+      - transaction confirmations
 
   investment:
-    description: "Portfolio updates, mutual fund NAV, dividends, stock alerts"
+    description: "Investment or portfolio-related updates"
     attention: low
+    includes:
+      - mutual fund updates
+      - stock alerts
+      - dividend notices
+      - portfolio summaries
+      - evoting notifications or alerts
 
   order:
-    description: "Purchase confirmations, shipping updates, delivery, returns"
+    description: "E-commerce purchase and fulfillment communication"
     attention: low
+    includes:
+      - order confirmations
+      - shipping updates
+      - delivery notifications
+      - returns
 
   subscription:
-    description: "SaaS renewals, plan changes, trial expiry, membership"
+    description: "Subscription lifecycle or membership updates"
     attention: low
+    includes:
+      - renewals
+      - plan changes
+      - membership updates
+      - trial expirations
+    excludes:
+      - product marketing
+      - upsell campaigns
 
   notification:
-    description: "App alerts, activity updates, reminders — automated non-marketing"
+    description: "Automated informational activity or status updates"
     attention: low
+    includes:
+      - app alerts
+      - login notifications
+      - reminders
+      - status changes
+      - system updates
+    excludes:
+      - marketing campaigns
+      - newsletters
+      - actionable requests
 
   newsletter:
-    description: "Digests, blog roundups, content emails, periodic updates"
+    description: "Editorial or recurring informational content"
     attention: low
+    includes:
+      - blog digests
+      - curated content
+      - industry roundups
+      - periodic editorial emails
+    excludes:
+      - promotional campaigns
+      - transactional updates
 
   promotional:
-    description: "Sales, discounts, marketing campaigns, product launches"
+    description: "Marketing, advertising, or engagement-driving communication"
     attention: low
+    includes:
+      - discounts
+      - coupons
+      - product launches
+      - referral campaigns
+      - sales promotions
+    notes: "Classify based on intent, not topic"
 
   social:
-    description: "Social media notifications, connection requests, likes, comments"
+    description: "Social platform activity and interaction notifications"
     attention: low
+    includes:
+      - likes
+      - comments
+      - follows
+      - connection requests
+      - mentions
