@@ -1,17 +1,21 @@
 import argparse
 import getpass
 import time
+from datetime import datetime, timezone
 
 import params
 import util
 import actions
+import state
 import labeller as labeller_mod
 from db.database import get_db
 from db.models import Rule
 from falcon import FalconClient, iterate_gmail_messages
 
 
-def should_delete_email(mail_processed, blacklist_rules, whitelist_rules, label_id_to_name_mapping):
+def should_delete_email(
+    mail_processed, blacklist_rules, whitelist_rules, label_id_to_name_mapping
+):
     curr_time = int(time.time())
 
     sender = mail_processed["Sender"]
@@ -23,12 +27,16 @@ def should_delete_email(mail_processed, blacklist_rules, whitelist_rules, label_
     tags = labeller_mod.compute_tags(mail_processed)
 
     for q in whitelist_rules:
-        if labeller_mod.evaluate_clause(q, sender, subject, text, labels, tags, timediff, snippet):
+        if labeller_mod.evaluate_clause(
+            q, sender, subject, text, labels, tags, timediff, snippet
+        ):
             util.log(f"Do not delete since [{q}] evaluates to True.")
             return False
 
     for q in blacklist_rules:
-        if labeller_mod.evaluate_clause(q, sender, subject, text, labels, tags, timediff, snippet):
+        if labeller_mod.evaluate_clause(
+            q, sender, subject, text, labels, tags, timediff, snippet
+        ):
             util.log(f"Delete since [{q}] evaluates to True.")
             return True
 
@@ -37,6 +45,20 @@ def should_delete_email(mail_processed, blacklist_rules, whitelist_rules, label_
 
 def cleanup(email, main_query, num_days, key):
     util.log(f"Cleanup triggered for {email} - {main_query}.")
+
+    original_num_days = num_days
+    last_run = None
+
+    if num_days == 0:
+        last_run = state.load_last_run(email)
+        if last_run is None:
+            util.log("No saved cursor found, falling back to --days=1.")
+            num_days = 1
+        else:
+            last_run_utc = last_run.astimezone(timezone.utc)
+            now_utc = datetime.now(tz=timezone.utc)
+            num_days = (now_utc - last_run_utc).total_seconds() / 86400
+            util.log(f"Incremental mode: fetching emails since {last_run.isoformat()} ({num_days:.4f} days).")
 
     config = labeller_mod.load_config()
     db = get_db()
@@ -74,6 +96,17 @@ def cleanup(email, main_query, num_days, key):
     for mail_id, mail_full, mail_processed in iterate_gmail_messages(
         falcon_client, main_query, num_days
     ):
+        mail_dt = mail_processed["DateTime"]
+
+        if last_run is not None and mail_dt is not None:
+            mail_dt_utc = mail_dt.astimezone(timezone.utc)
+            last_run_utc = last_run.astimezone(timezone.utc)
+            if mail_dt_utc <= last_run_utc:
+                util.log(f"Skipping already-processed email [{mail_id}] from {mail_dt.isoformat()}.")
+                continue
+
+        util.log(f"Processing email with id [{mail_id}] and subject [{mail_processed['Subject']}].")
+
         # Phase 1: Rule-based labelling
         add_labels, remove_labels = labeller_mod.rule_labeller(
             mail_processed, label_rules, created_label_ids
@@ -98,8 +131,13 @@ def cleanup(email, main_query, num_days, key):
         )
 
         # Phase 4: Evaluate delete rules (after labels are applied)
-        if should_delete_email(mail_processed, blacklist_rules, whitelist_rules, created_label_ids):
+        if should_delete_email(
+            mail_processed, blacklist_rules, whitelist_rules, created_label_ids
+        ):
             actions.trash_email(falcon_client, mail_id)
+
+        if original_num_days == 0 and mail_dt is not None:
+            state.save_last_run(email, mail_dt)
 
         time.sleep(0.5)
 
@@ -109,8 +147,15 @@ def cleanup(email, main_query, num_days, key):
 if __name__ == "__main__":
     try:
         parser = argparse.ArgumentParser(description="Falcon email cleanup pipeline.")
-        parser.add_argument("--days", type=int, default=2, help="Number of days of email to process.")
-        parser.add_argument("--key", type=str, default=None, help="Encryption passphrase for Gmail token storage. Prompted if omitted.")
+        parser.add_argument(
+            "--days", type=int, default=2, help="Number of days of email to process."
+        )
+        parser.add_argument(
+            "--key",
+            type=str,
+            default=None,
+            help="Encryption passphrase for Gmail token storage. Prompted if omitted.",
+        )
         args = parser.parse_args()
 
         key = args.key or getpass.getpass("Please provide secret key: ")
