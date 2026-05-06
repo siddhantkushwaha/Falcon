@@ -75,6 +75,8 @@ labels:
       - travel promotions
       - vacation ads
       - airline discounts
+      - coupon offers
+      - coin deals
 
   otp:
     description: "Short-lived verification or authentication codes"
