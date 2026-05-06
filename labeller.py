@@ -196,13 +196,19 @@ def _classify_batch(
 
             labels_map = {}
             for item in result:
-                if not isinstance(item, dict) or "id" not in item or "labels" not in item:
+                if (
+                    not isinstance(item, dict)
+                    or "id" not in item
+                    or "labels" not in item
+                ):
                     last_error = f"malformed item in result: {item}"
                     raise ValueError(last_error)
                 raw_labels = item["labels"] if isinstance(item["labels"], list) else []
                 validated = _validate_labels(raw_labels, valid_labels)
                 if raw_labels and not validated:
-                    last_error = f"all labels invalid for email [{item['id']}]: {raw_labels}"
+                    last_error = (
+                        f"all labels invalid for email [{item['id']}]: {raw_labels}"
+                    )
                     raise ValueError(last_error)
                 labels_map[item["id"]] = validated
 
@@ -214,7 +220,9 @@ def _classify_batch(
 
         except Exception as e:
             last_error = str(e)
-            util.error(f"LLM batch attempt {attempt}/{max_retries} failed: {last_error}")
+            util.error(
+                f"LLM batch attempt {attempt}/{max_retries} failed: {last_error}"
+            )
             if attempt < max_retries:
                 time.sleep(retry_delay * attempt)
 
@@ -249,7 +257,13 @@ def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, lis
         batch = email_contexts[i : i + batch_size]
         all_labels.update(
             _classify_batch(
-                client, prompt_template, taxonomy_str, batch, valid_labels, max_retries, retry_delay
+                client,
+                prompt_template,
+                taxonomy_str,
+                batch,
+                valid_labels,
+                max_retries,
+                retry_delay,
             )
         )
 

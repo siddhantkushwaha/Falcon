@@ -106,7 +106,9 @@ def cleanup(email, main_query, num_days, key):
             llm_adds, llm_removes = labeller_mod.llm_labeller(
                 mail_processed, config, created_label_ids
             )
-            print(f"LLM suggests adding labels: {llm_adds} and removing labels: {llm_removes}")
+            print(
+                f"LLM suggests adding labels: {llm_adds} and removing labels: {llm_removes}"
+            )
             add_labels.extend(llm_adds)
             remove_labels.extend(llm_removes)
 
