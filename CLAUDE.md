@@ -57,7 +57,7 @@ cleanup.py → fetch (falcon.py) → for each email:
 
 **Core modules:**
 - `falcon.py` — `FalconClient` (Gmail API wrapper via `google_py_apis`) and `process_gmail_dic` (raw Gmail → structured dict). `iterate_gmail_messages` is the shared iterator.
-- `labeller.py` — Owns all classification logic: `evaluate_clause` (rule eval with `eval()`), `rule_labeller` (label rules → add/remove lists), `llm_labeller` (LLM → AI/* labels), and shared helpers (`get_label_names`, `compute_tags`).
+- `labeller.py` — Owns all classification logic: `evaluate_clause` (rule eval with `eval()`), `rule_labeller` (label rules → add/remove lists), `llm_labeller` (LLM → AI/* labels), and shared helpers (`get_label_names`, `compute_tags`). LLM output is validated against the taxonomy via `_validate_labels`; `_classify_batch` retries on any failure (network, JSON parse, malformed response, all-invalid labels) up to `llm.max_retries` times with `llm.retry_delay`-based backoff, then raises.
 - `actions.py` — `apply_label_changes()`, `trash_email()`, `consolidate_spam()`. All Gmail mutations go here.
 - `state.py` — `load_processed_ids(email)` / `mark_processed(email, mail_id)`. Persists sets of processed message IDs per account in `data/history_ids.json`.
 - `llm/` — `LLMClient` abstract base, `OllamaLLMClient`, `GoogleAILLMClient`, `get_llm_client(config)` factory.
@@ -66,8 +66,8 @@ cleanup.py → fetch (falcon.py) → for each email:
 - `util.py` — Logging (via `viper-python`), text cleaning.
 
 **Data files:**
-- `config/config.yaml` — Runtime config (not committed; copy from `config/config.example.yaml`). Contains LLM settings and the `emails` map (account → Gmail query).
-- `data/labels.yaml` — LLM label taxonomy (16 categories with descriptions and attention tiers).
+- `config/config.yaml` — Runtime config (not committed; copy from `config/config.example.yaml`). Contains LLM settings (`llm:`), pipeline timing (`pipeline:`), and the `emails` map (account → Gmail query).
+- `data/labels.yaml` — LLM label taxonomy (17 categories with descriptions and attention tiers). Used at runtime to validate LLM output.
 - `data/prompts/labelling.txt` — LLM prompt template with `{taxonomy}` and `{emails}` placeholders.
 - `data/rules.csv` — Rule definitions (type, query, order, apply_to, args).
 - `data/history_ids.json` — Per-account sets of processed message IDs (auto-generated; used by incremental mode).
@@ -76,7 +76,9 @@ cleanup.py → fetch (falcon.py) → for each email:
 ## Key Design Decisions
 
 - Rules use raw `eval()` with local variables — rule queries are arbitrary Python expressions, not a DSL.
-- LLM classification runs unconditionally on every email (no opt-in flag). Existing `AI/` labels that no longer match are removed.
+- LLM classification runs unconditionally on every email (no opt-in flag). Existing `AI/` labels that no longer match are removed. LLM output is validated against the taxonomy — invalid labels are dropped; all-invalid responses trigger a retry.
+- LLM calls retry up to `llm.max_retries` times (default 3) with exponential backoff (`retry_delay * attempt`). Any unrecoverable failure raises and aborts the pipeline.
+- Pipeline sleep durations are configurable: `pipeline.sleep_after_label` (between phases 3–4) and `pipeline.sleep_between_emails` (per-email loop delay).
 - LLM labels are namespaced under `AI/` (e.g. `AI/PERSONAL`, `AI/OTP`) so rule expressions can reference them: `'ai/personal' in labels`.
 - Incremental mode (`--days 0`) skips phases 1–3 for already-processed IDs but always re-evaluates delete rules, so new blacklist rules can still catch old mail.
 - Token encryption: Gmail tokens in `gmail_tokens/` are encrypted with a passphrase provided at runtime.

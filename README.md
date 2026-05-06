@@ -54,6 +54,12 @@ llm:
     ollama: "phi3"
     google: "gemini-2.0-flash"
   google_api_key: ""   # Google AI API key (or set via GOOGLE_AI_API_KEY env var)
+  max_retries: 3
+  retry_delay: 2.0
+
+pipeline:
+  sleep_after_label: 0      # seconds between phase 3 and phase 4
+  sleep_between_emails: 0.5 # seconds between emails
 
 emails:
   you@gmail.com: ~                          # no filter — all mail
@@ -98,7 +104,11 @@ llm:
   batch_size: 1         # emails per LLM call
   body_max_chars: 500   # truncate body to this length
   google_api_key: ""    # Google AI API key
+  max_retries: 3        # retry attempts on failure
+  retry_delay: 2.0      # base delay in seconds (multiplied by attempt number)
 ```
+
+Labels returned by the LLM are validated against the taxonomy. Invalid or hallucinated labels are dropped with a warning. If all retry attempts fail (network error, JSON parse failure, malformed response, or all-invalid labels), the pipeline aborts with an error.
 
 ## Rules
 
