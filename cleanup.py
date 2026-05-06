@@ -87,45 +87,43 @@ def cleanup(email, main_query, num_days, key):
     for mail_id, mail_full, mail_processed in iterate_gmail_messages(
         falcon_client, main_query, num_days
     ):
-        if incremental and mail_id in processed_ids:
-            util.log(f"Skipping already-processed email [{mail_id}].")
-            continue
+        already_processed = incremental and mail_id in processed_ids
 
         util.log(
             f"Processing email with id [{mail_id}] and subject [{mail_processed['Subject']}]."
         )
 
-        # Phase 1: Rule-based labelling
-        add_labels, remove_labels = labeller_mod.rule_labeller(
-            mail_processed, label_rules, created_label_ids
-        )
+        if not already_processed:
+            # Phase 1: Rule-based labelling
+            add_labels, remove_labels = labeller_mod.rule_labeller(
+                mail_processed, label_rules, created_label_ids
+            )
 
-        # Phase 2: LLM labelling
-        llm_adds, llm_removes = labeller_mod.llm_labeller(
-            mail_processed, config, created_label_ids
-        )
-        add_labels.extend(llm_adds)
-        remove_labels.extend(llm_removes)
+            # Phase 2: LLM labelling
+            llm_adds, llm_removes = labeller_mod.llm_labeller(
+                mail_processed, config, created_label_ids
+            )
+            add_labels.extend(llm_adds)
+            remove_labels.extend(llm_removes)
 
-        # Phase 3: Apply label changes to Gmail
-        actions.apply_label_changes(
-            falcon_client,
-            mail_id,
-            mail_processed,
-            add_labels,
-            remove_labels,
-            created_label_names,
-            created_label_ids,
-        )
+            # Phase 3: Apply label changes to Gmail
+            actions.apply_label_changes(
+                falcon_client,
+                mail_id,
+                mail_processed,
+                add_labels,
+                remove_labels,
+                created_label_names,
+                created_label_ids,
+            )
+
+            state.mark_processed(email, mail_id)
 
         # Phase 4: Evaluate delete rules (after labels are applied)
         if should_delete_email(
             mail_processed, blacklist_rules, whitelist_rules, created_label_ids
         ):
             actions.trash_email(falcon_client, mail_id)
-
-        if incremental:
-            state.mark_processed(email, mail_id)
 
         time.sleep(0.5)
 
