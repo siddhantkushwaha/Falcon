@@ -1,24 +1,120 @@
 import os
+import time
 
 import yaml
 
 from llm import get_llm_client
 from llm.base import LLMClient
 import util
-from params import root_dir
+from params import root_dir, config_dir
 
 
 def load_config() -> dict:
-    with open(os.path.join(root_dir, "config", "config.yaml"), "r") as f:
+    with open(os.path.join(config_dir, "config.yaml"), "r") as f:
         return yaml.safe_load(f)
 
 
-def load_taxonomy(taxonomy_path: str) -> dict:
+# --- Shared helpers ---
+
+def lower_strip_clean(string):
+    if string is None:
+        return ""
+    return util.clean_text(string).lower()
+
+
+def get_label_names(mail_processed, label_id_to_name_mapping):
+    return {label_id_to_name_mapping[i] for i in mail_processed["LabelIds"]}
+
+
+def compute_tags(mail_processed):
+    tags = set()
+    if mail_processed["Unsubscribe"] is not None:
+        tags.add("unsubscribe")
+    return tags
+
+
+def evaluate_clause(clause, sender, subject, text, labels, tags, timediff, snippet):
+    try:
+        sender = lower_strip_clean(sender)
+        sender_alias = sender.split("@")[0]
+        sender_domain = sender.split("@")[1]
+
+        labels = {i.lower() for i in labels}
+        tags = {i.lower() for i in tags}
+
+        subject = lower_strip_clean(subject)
+        snippet = lower_strip_clean(snippet)
+        text = lower_strip_clean(text)
+        subject_snippet = f"{subject} {snippet}"
+        content = f"{subject} {snippet} {text}"
+
+        minute = 60
+        hour = 60 * minute
+        day = 24 * hour
+        week = 7 * day
+        month = 30 * day
+        year = 365 * day
+
+        locals_dict = locals()
+        return eval(clause, locals_dict, {})
+    except Exception as e:
+        util.error(f"{sender}:[{e}]")
+        return False
+
+
+# --- Rule labeller ---
+
+def rule_labeller(mail_processed, label_rules, label_id_to_name_mapping) -> tuple[list, list]:
+    """Apply rule-based label operations. Returns (add_label_names, remove_label_names)."""
+    curr_time = int(time.time())
+
+    sender = mail_processed["Sender"]
+    subject = mail_processed["Subject"]
+    text = mail_processed["Text"]
+    snippet = mail_processed["Snippet"]
+    timediff = curr_time - int(mail_processed["DateTime"].timestamp())
+    labels = get_label_names(mail_processed, label_id_to_name_mapping)
+    tags = compute_tags(mail_processed)
+
+    add_labels = []
+    remove_labels = []
+
+    for q, label_out, args in label_rules:
+        label_out = label_out.upper().strip()
+        label_op_type = label_out[0]
+        label_name = label_out[1:]
+
+        args = set(args.split(",")) if args else set()
+
+        if evaluate_clause(q, sender, subject, text, labels, tags, timediff, snippet):
+            if label_op_type == "+":
+                if label_name not in labels:
+                    util.log(f"Add label [{label_name}] since [{q}] evaluates to True.")
+                    labels.add(label_name)
+                    add_labels.append(label_name)
+            elif label_op_type == "-":
+                if label_name in labels:
+                    util.log(f"Remove label [{label_name}] since [{q}] evaluates to True.")
+                    labels.remove(label_name)
+                    remove_labels.append(label_name)
+            else:
+                raise Exception(f"Invalid rule out [{label_out}].")
+
+            if "skip_others" in args:
+                util.log("Skipping processing other labelling rules.")
+                break
+
+    return add_labels, remove_labels
+
+
+# --- LLM labeller ---
+
+def _load_taxonomy(taxonomy_path: str) -> dict:
     with open(os.path.join(root_dir, taxonomy_path), "r") as f:
         return yaml.safe_load(f)
 
 
-def format_taxonomy_for_prompt(taxonomy: dict) -> str:
+def _format_taxonomy_for_prompt(taxonomy: dict) -> str:
     lines = []
     for name, meta in taxonomy["labels"].items():
         desc = meta.get("description", "")
@@ -26,7 +122,7 @@ def format_taxonomy_for_prompt(taxonomy: dict) -> str:
     return "\n".join(lines)
 
 
-def prepare_email_context(mail_processed: dict, body_max_chars: int) -> dict:
+def _prepare_email_context(mail_processed: dict, body_max_chars: int) -> dict:
     body = util.clean_text(mail_processed.get("Text")) or ""
     if len(body) > body_max_chars:
         body = body[:body_max_chars] + "..."
@@ -40,7 +136,7 @@ def prepare_email_context(mail_processed: dict, body_max_chars: int) -> dict:
     }
 
 
-def format_emails_for_prompt(email_contexts: list[dict]) -> str:
+def _format_emails_for_prompt(email_contexts: list[dict]) -> str:
     lines = []
     for i, ctx in enumerate(email_contexts, 1):
         lines.append(f"### Email {i} (id: {ctx['id']})")
@@ -53,13 +149,13 @@ def format_emails_for_prompt(email_contexts: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def classify_batch(
+def _classify_batch(
     client: LLMClient,
     prompt_template: str,
     taxonomy_str: str,
     email_contexts: list[dict],
 ) -> dict[str, list[str]]:
-    emails_str = format_emails_for_prompt(email_contexts)
+    emails_str = _format_emails_for_prompt(email_contexts)
     prompt = prompt_template.format(taxonomy=taxonomy_str, emails=emails_str)
 
     result = client.generate_json(prompt)
@@ -77,11 +173,7 @@ def classify_batch(
     return labels_map
 
 
-def classify_emails(mails_processed: list[dict], config: dict = None) -> dict[str, list[str]]:
-    """Classify emails using LLM. Returns {email_id: [labels]}."""
-    if config is None:
-        config = load_config()
-
+def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, list[str]]:
     llm_config = config["llm"]
     labelling_config = config["labelling"]
 
@@ -89,21 +181,40 @@ def classify_emails(mails_processed: list[dict], config: dict = None) -> dict[st
     batch_size = llm_config["batch_size"]
     body_max_chars = llm_config["body_max_chars"]
 
-    taxonomy = load_taxonomy(labelling_config["taxonomy_file"])
-    taxonomy_str = format_taxonomy_for_prompt(taxonomy)
+    taxonomy = _load_taxonomy(labelling_config["taxonomy_file"])
+    taxonomy_str = _format_taxonomy_for_prompt(taxonomy)
 
     prompt_path = os.path.join(root_dir, labelling_config["prompt_file"])
     with open(prompt_path, "r") as f:
         prompt_template = f.read()
 
-    email_contexts = [
-        prepare_email_context(m, body_max_chars) for m in mails_processed
-    ]
+    email_contexts = [_prepare_email_context(m, body_max_chars) for m in mails_processed]
 
     all_labels = {}
     for i in range(0, len(email_contexts), batch_size):
         batch = email_contexts[i : i + batch_size]
-        batch_labels = classify_batch(client, prompt_template, taxonomy_str, batch)
-        all_labels.update(batch_labels)
+        all_labels.update(_classify_batch(client, prompt_template, taxonomy_str, batch))
 
     return all_labels
+
+
+def llm_labeller(mail_processed, config, label_id_to_name_mapping) -> tuple[list, list]:
+    """Run LLM classification and return (add_label_names, remove_label_names) for AI/* labels."""
+    batch_labels = _classify_emails([mail_processed], config)
+    llm_labels = batch_labels.get(mail_processed["Id"], [])
+
+    current_labels = get_label_names(mail_processed, label_id_to_name_mapping)
+    expected_ai_labels = {f"AI/{l}".upper() for l in llm_labels}
+
+    add_labels = []
+    remove_labels = []
+
+    for existing in current_labels:
+        if existing.startswith("AI/") and existing not in expected_ai_labels:
+            remove_labels.append(existing)
+
+    for label_upper in expected_ai_labels:
+        if label_upper not in current_labels:
+            add_labels.append(label_upper)
+
+    return add_labels, remove_labels
