@@ -7,6 +7,8 @@ llm:
   batch_size: 1
   body_max_chars: 500  # truncated plaintext body length
   google_api_key: ""
+  max_retries: 3
+  retry_delay: 2.0  # seconds; multiplied by attempt number
 
 labelling:
   prompt_file: "data/prompts/labelling.txt"
