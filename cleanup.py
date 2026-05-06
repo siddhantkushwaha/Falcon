@@ -1,5 +1,5 @@
+import argparse
 import getpass
-import sys
 import time
 from datetime import datetime, timedelta
 
@@ -224,16 +224,18 @@ def cleanup(email, main_query, num_days, key, use_llm):
 
 if __name__ == "__main__":
     try:
-        num_days = int(sys.argv[1]) if len(sys.argv) > 1 else 2
-        key = sys.argv[2] if len(sys.argv) > 2 else None
-        if key is None or key == "#":
-            key = getpass.getpass("Please provide secret key: ")
-        use_llm = len(sys.argv) > 3 and sys.argv[3] == "1"
+        parser = argparse.ArgumentParser(description="Falcon email cleanup pipeline.")
+        parser.add_argument("--days", type=int, default=2, help="Number of days of email to process.")
+        parser.add_argument("--key", type=str, default=None, help="Encryption passphrase for Gmail token storage. Prompted if omitted.")
+        parser.add_argument("--llm", action="store_true", help="Enable LLM classification.")
+        args = parser.parse_args()
 
-        util.log(f"Running cleanup on emails in last [{num_days}] days.")
+        key = args.key or getpass.getpass("Please provide secret key: ")
+
+        util.log(f"Running cleanup on emails in last [{args.days}] days.")
 
         for em in list(params.emails):
-            cleanup(email=em, main_query=params.emails[em], num_days=num_days, key=key, use_llm=use_llm)
+            cleanup(email=em, main_query=params.emails[em], num_days=args.days, key=key, use_llm=args.llm)
 
     except Exception as exp:
         util.error(exp)
