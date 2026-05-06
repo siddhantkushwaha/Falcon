@@ -6,7 +6,7 @@ llm:
   ollama_host: "http://localhost:11434"
   batch_size: 1
   body_max_chars: 500  # truncated plaintext body length
-  google_api_key: ""  # Google AI API key
+  google_api_key: ""
 
 labelling:
   prompt_file: "data/prompts/labelling.txt"

@@ -117,6 +117,8 @@ def cleanup(email, main_query, num_days, key):
                 created_label_ids,
             )
 
+            time.sleep(60)
+
             state.mark_processed(email, mail_id)
 
         # Phase 4: Evaluate delete rules (after labels are applied)
@@ -125,7 +127,7 @@ def cleanup(email, main_query, num_days, key):
         ):
             actions.trash_email(falcon_client, mail_id)
 
-        time.sleep(60)
+        time.sleep(0.5)
 
     actions.consolidate_spam(falcon_client)
 
