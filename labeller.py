@@ -9,7 +9,7 @@ from params import root_dir
 
 
 def load_config() -> dict:
-    with open(os.path.join(root_dir, "config.yaml"), "r") as f:
+    with open(os.path.join(root_dir, "config", "config.yaml"), "r") as f:
         return yaml.safe_load(f)
 
 

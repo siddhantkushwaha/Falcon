@@ -1,108 +1,145 @@
+# Falcon — Gmail Triage Pipeline
 
-# Falcon — Rule-based email processing
+Falcon automates Gmail triage using a three-phase pipeline: fetch emails → classify with rules + LLM → apply actions (label, trash, archive). Rules are Python expressions stored in SQLite; LLM classification uses Ollama (local) or Google Gemini.
 
-Falcon is a lightweight, rule-driven email processing toolkit that helps automate email triage (labeling, archiving, trashing, unsubscribing hints, etc.) using a CSV rule set and Gmail API credentials.
+## Pipeline
 
-## Features
-- Rule-driven actions: blacklist, whitelist, add/remove labels, and custom actions.
-- Support for complex Python expressions in rules (inspect sender, labels, content, age).
-- Integrates with Gmail credentials and stores tokens in `gmail_tokens/`.
-- Utilities for updating rules (`manage.py`) and running cleanup/processing jobs (`cleanup.py`, `falcon.py`).
-
-## Requirements
-- Python 3.8+ (use a venv)
-- System dependencies required by packages in `requirements.txt`
+```
+cleanup.py
+  │
+  ├─ fetch emails (falcon.py — Gmail API)
+  │
+  └─ for each email:
+        │
+        ├─ Phase 1: Rule-based labelling
+        │     └─ evaluate Python expressions → add/remove labels
+        │
+        ├─ Phase 2: LLM labelling (labeller.py)
+        │     └─ classify_emails() → AI/* labels (e.g. AI/PERSONAL, AI/OTP)
+        │
+        ├─ Phase 3: Apply changes (actions.py)
+        │     └─ apply_label_changes() → Gmail API calls
+        │
+        └─ Phase 4: Delete rules
+              └─ should_delete_email() → trash if matched
+```
 
 ## Quick start
-
-1. Clone the repository and create a virtual environment:
 
 ```bash
 git clone <repo-url>
 cd Falcon
-python -m venv .venv
-source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-2. Gmail API credentials:
-- Follow the instructions in the project's gist linked in the original README to create OAuth credentials for Gmail (or create your own using Google Cloud Console).
-- Save the OAuth client credentials as `config/desktop_credentials.json`.
+### Gmail credentials
 
-3. Prepare data files:
-- Copy `data/emails_template.json` → `data/emails.json` and populate if needed.
-- Copy `data/rules_sample.csv` → `data/rules.csv` and edit rules to your needs.
+Create OAuth credentials in Google Cloud Console and save to `config/desktop_credentials.json`. A template is at `config/desktop_credentials_template.json`.
 
-4. Push rules to the DB:
+### Config
 
 ```bash
-python manage.py --update_rules
+cp config/config.example.yaml config/config.yaml
 ```
 
-5. Run the cleaner/processor (example):
+Edit `config/config.yaml` to set your LLM provider (`ollama` or `google`) and model.
+
+### Data files
 
 ```bash
+cp data/emails_template.json data/emails.json   # add email → Gmail query mappings
+cp data/rules_sample.csv data/rules.csv          # edit rules to your needs
+python manage.py --update_rules                  # push rules to SQLite DB
+```
+
+### Run
+
+```bash
+# Process emails from the last 2 days
 python cleanup.py
-# or with an explicit limit and query (see script args):
-python cleanup.py 100 <optional-filter-or-run-id>
+
+# Last N days, with encryption key, with LLM enabled
+python cleanup.py [num_days] [key] [1]
 ```
 
-## Configuration and data layout
-- `config/desktop_credentials.json` — OAuth client credentials for Gmail API (required).
-- `gmail_tokens/` — Stores user tokens after OAuth flow (`<email>.json`).
-- `data/rules.csv` — Rule definitions (CSV). See the Rules section below.
-- `data/emails.json` — Optional store for email metadata used by tools.
-- `db/` — Contains `database.py` and `models.py` for rule storage and state.
+## LLM classification
 
-## Rules format
+When LLM is enabled (`python cleanup.py 2 mykey 1`), each email is classified against the label taxonomy in `data/labels.yaml`. Results are applied as nested Gmail labels under `AI/` (e.g. `AI/PERSONAL`, `AI/PROMOTIONAL`).
 
-Rules are defined in `data/rules.csv`. Each row describes a rule and the action to take when the rule's `query` evaluates to True for a given email.
+Configure the provider in `config/config.yaml`:
 
-Required fields (typical):
-- `type` — what to do when the rule matches. Examples:
-  - `blacklist` — move to trash
-  - `whitelist` — skip/ignore
-  - `label:+<label-name>` — add label
-  - `label:-<label-name>` — remove label
-- `query` — a Python expression evaluated in the context of variables described below.
-- `apply_to` — comma-separated email IDs or `all`.
-- `order` — evaluation order; lower numbers run earlier.
-- `args` — misc comma-separated args (e.g., `skip_others`).
+```yaml
+llm:
+  provider: "ollama"   # or "google"
+  model:
+    ollama: "phi3"
+    google: "gemini-2.0-flash"
+```
 
-Context variables available in `query`:
-- `sender` — sender email address
-- `labels` — list of label names on the email
-- `tags` — list of tags populated by Falcon, e.g. `unsubscribe` when an unsubscribe hint is detected
-- `subject`, `snippet`, `text`, `subject_snippet`, `content` — email text fields
-- `timediff` — age of the email in seconds
-- convenience constants: `day`, `week` (seconds)
+For Google Gemini, set `GOOGLE_AI_API_KEY` in your environment.
 
-Example rule rows:
+## Rules
 
-| type               | query                                                                                                                            | order | apply_to | args |
-|--------------------|----------------------------------------------------------------------------------------------------------------------------------|------:|:--------:|:----:|
-| blacklist          | timediff > day and any(i in labels for i in ['unsubscribe'])                                                                     | 10001 | all      |      |
-| label:+unsubscribe | 'unsubscribe' in tags                                                                                                            |     2 | all      |      |
-| label:-important   | True                                                                                                                             |     3 | all      |      |
+Rules live in `data/rules.csv` (synced to SQLite via `manage.py`). Each rule is a Python expression evaluated in email context.
 
-## Running and common commands
-- Install dependencies: `pip install -r requirements.txt`
-- Update rules: `python manage.py --update_rules`
-- Run cleanup/processor: `python cleanup.py [limit] [run-id-or-filter]`
-- Run the main processor (if provided): `python falcon.py` (check file docstring for options)
-- Explore other utilities: `unsubscribe.py`, `cc_statement_analysis.py` for additional features.
+**Rule types:**
+- `blacklist` — move to trash if expression is true
+- `whitelist` — never trash (overrides blacklist)
+- `label:+<NAME>` — add label
+- `label:-<NAME>` — remove label
 
-If a script accepts arguments, run it with `-h` or `--help` to see available options.
+**Context variables available in expressions:**
 
--
+| Variable | Description |
+|---|---|
+| `sender`, `sender_alias`, `sender_domain` | Parsed sender address |
+| `subject`, `snippet`, `text`, `content` | Email text fields |
+| `labels` | Current Gmail label names (lowercase) |
+| `tags` | Computed tags, e.g. `unsubscribe` |
+| `timediff` | Age of email in seconds |
+| `minute`, `hour`, `day`, `week`, `month`, `year` | Time constants |
+
+**Example rules:**
+
+```
+whitelist  → 'starred' in labels
+label:+unsubscribe → 'unsubscribe' in tags
+label:-important → True
+blacklist  → timediff > day and 'unsubscribe' in labels and not any(i in labels for i in ['ai/actionable', 'ai/personal'])
+```
+
+The blacklist rule above protects emails the LLM flagged as personal or actionable, even if they have an unsubscribe header.
+
+## File structure
+
+| Path | Role |
+|---|---|
+| `cleanup.py` | CLI entry point — orchestrates the pipeline |
+| `falcon.py` | Gmail API wrapper + email parser |
+| `labeller.py` | LLM classification orchestrator |
+| `actions.py` | Gmail mutations (label, trash, spam) |
+| `llm/` | Provider-agnostic LLM client package |
+| `manage.py` | CLI to sync rules between CSV and SQLite |
+| `rules_util.py` | Rule import/export helpers |
+| `db/` | SQLAlchemy models + DB helper |
+| `params.py` | Global paths |
+| `util.py` | Logging and text utilities |
+| `config/config.yaml` | Runtime config (not committed — copy from example) |
+| `config/config.example.yaml` | Config template |
+| `data/labels.yaml` | LLM label taxonomy |
+| `data/prompts/labelling.txt` | LLM prompt template |
+| `data/rules.csv` | Rule definitions (edit this, then run manage.py) |
+| `data/emails.json` | Email address → Gmail query mapping |
+
+## Commands
+
+```bash
+python manage.py --update_rules   # CSV → SQLite
+python manage.py --dump_rules     # SQLite → CSV
+python cleanup.py [days] [key] [use_llm: 1|0]
+```
+
 ## License
-- See the `LICENSE` file in the repository.
 
----
-
-If you'd like, I can also:
-- Add quick CLI examples specific to `cleanup.py` and `manage.py` after inspecting their `argparse` help text.
-- Add a short diagram or flow for how emails move through rules.
-
-Tell me which of those you'd like next.
-
+See `LICENSE`.

@@ -1,5 +1,7 @@
 data
 config
+!config/config.example.yaml
+!config/desktop_credentials_template.json
 dataset
 parsed
 tokens
