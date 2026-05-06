@@ -1,7 +1,6 @@
 import argparse
 import getpass
 import time
-from datetime import datetime, timezone
 
 import params
 import util
@@ -46,21 +45,11 @@ def should_delete_email(
 def cleanup(email, main_query, num_days, key):
     util.log(f"Cleanup triggered for {email} - {main_query}.")
 
-    original_num_days = num_days
-    last_run = None
+    incremental = num_days == 0
+    if incremental:
+        num_days = 1
 
-    if num_days == 0:
-        last_run = state.load_last_run(email)
-        if last_run is None:
-            util.log("No saved cursor found, falling back to --days=1.")
-            num_days = 1
-        else:
-            last_run_utc = last_run.astimezone(timezone.utc)
-            now_utc = datetime.now(tz=timezone.utc)
-            num_days = (now_utc - last_run_utc).total_seconds() / 86400
-            util.log(
-                f"Incremental mode: fetching emails since {last_run.isoformat()} ({num_days:.4f} days)."
-            )
+    processed_ids = state.load_processed_ids(email) if incremental else set()
 
     config = labeller_mod.load_config()
     db = get_db()
@@ -98,16 +87,9 @@ def cleanup(email, main_query, num_days, key):
     for mail_id, mail_full, mail_processed in iterate_gmail_messages(
         falcon_client, main_query, num_days
     ):
-        mail_dt = mail_processed["DateTime"]
-
-        if last_run is not None and mail_dt is not None:
-            mail_dt_utc = mail_dt.astimezone(timezone.utc)
-            last_run_utc = last_run.astimezone(timezone.utc)
-            if mail_dt_utc <= last_run_utc:
-                util.log(
-                    f"Skipping already-processed email [{mail_id}] from {mail_dt.isoformat()}."
-                )
-                continue
+        if incremental and mail_id in processed_ids:
+            util.log(f"Skipping already-processed email [{mail_id}].")
+            continue
 
         util.log(
             f"Processing email with id [{mail_id}] and subject [{mail_processed['Subject']}]."
@@ -142,8 +124,8 @@ def cleanup(email, main_query, num_days, key):
         ):
             actions.trash_email(falcon_client, mail_id)
 
-        if original_num_days == 0 and mail_dt is not None:
-            state.save_last_run(email, mail_dt)
+        if incremental:
+            state.mark_processed(email, mail_id)
 
         time.sleep(0.5)
 

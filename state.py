@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 from pathlib import Path
 
 import params
@@ -7,21 +6,20 @@ import params
 STATE_FILE = Path(params.data_dir) / "history_ids.json"
 
 
-def load_last_run(email: str) -> datetime | None:
+def load_processed_ids(email: str) -> set[str]:
     try:
         data = json.loads(STATE_FILE.read_text())
-        raw = data.get(email)
-        if raw is None:
-            return None
-        return datetime.fromisoformat(raw)
+        return set(data.get(email, []))
     except Exception:
-        return None
+        return set()
 
 
-def save_last_run(email: str, dt: datetime) -> None:
+def mark_processed(email: str, mail_id: str) -> None:
     try:
         data = json.loads(STATE_FILE.read_text())
     except Exception:
         data = {}
-    data[email] = dt.isoformat()
+    ids = set(data.get(email, []))
+    ids.add(mail_id)
+    data[email] = list(ids)
     STATE_FILE.write_text(json.dumps(data, indent=2))
