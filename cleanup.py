@@ -144,10 +144,10 @@ def apply_llm_labels(mail_processed, add_label_names, remove_label_names, label_
             add_label_names.append(label_upper)
 
 
-def cleanup(email, main_query, num_days, key, use_llm):
+def cleanup(email, main_query, num_days, key):
     util.log(f"Cleanup triggered for {email} - {main_query}.")
 
-    config = labeller_mod.load_config() if use_llm else None
+    config = labeller_mod.load_config()
 
     db = get_db()
 
@@ -193,10 +193,9 @@ def cleanup(email, main_query, num_days, key, use_llm):
         )
 
         # Phase 2: LLM labelling
-        if use_llm:
-            apply_llm_labels(
-                mail_processed, add_label_names, remove_label_names, created_label_ids, config
-            )
+        apply_llm_labels(
+            mail_processed, add_label_names, remove_label_names, created_label_ids, config
+        )
 
         # Phase 3: Apply label changes to Gmail
         actions.apply_label_changes(
@@ -227,7 +226,6 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(description="Falcon email cleanup pipeline.")
         parser.add_argument("--days", type=int, default=2, help="Number of days of email to process.")
         parser.add_argument("--key", type=str, default=None, help="Encryption passphrase for Gmail token storage. Prompted if omitted.")
-        parser.add_argument("--llm", action="store_true", help="Enable LLM classification.")
         args = parser.parse_args()
 
         key = args.key or getpass.getpass("Please provide secret key: ")
@@ -235,7 +233,7 @@ if __name__ == "__main__":
         util.log(f"Running cleanup on emails in last [{args.days}] days.")
 
         for em in list(params.emails):
-            cleanup(email=em, main_query=params.emails[em], num_days=args.days, key=key, use_llm=args.llm)
+            cleanup(email=em, main_query=params.emails[em], num_days=args.days, key=key)
 
     except Exception as exp:
         util.error(exp)
