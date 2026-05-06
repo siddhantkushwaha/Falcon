@@ -156,6 +156,19 @@ def _format_emails_for_prompt(email_contexts: list[dict]) -> str:
     return "\n".join(lines)
 
 
+def _validate_labels(labels: list[str], valid_labels: set[str]) -> list[str]:
+    result = []
+    for label in labels:
+        normalized = label.strip().lower()
+        if normalized == "none":
+            continue
+        if normalized in valid_labels:
+            result.append(normalized)
+        else:
+            util.log(f"LLM returned invalid label [{label}], dropping.")
+    return result
+
+
 def _classify_batch(
     client: LLMClient,
     prompt_template: str,
