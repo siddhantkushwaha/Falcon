@@ -8,7 +8,7 @@ def get_llm_client(config: dict) -> LLMClient:
     models = config["model"]
 
     if provider == "ollama":
-        return OllamaLLMClient(model=models["ollama"])
+        return OllamaLLMClient(model=models["ollama"], host=config["ollama_host"])
     elif provider == "google":
         return GoogleAILLMClient(
             model=models["google"],
