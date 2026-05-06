@@ -6,7 +6,7 @@ from llm.base import LLMClient
 
 
 class GoogleAILLMClient(LLMClient):
-    def __init__(self, model: str = "gemini-2.0-flash", api_key_env: str = "GOOGLE_AI_API_KEY"):
+    def __init__(self, model: str, api_key_env: str):
         super().__init__(model)
         api_key = os.environ.get(api_key_env)
         if not api_key:

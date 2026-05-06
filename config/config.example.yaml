@@ -11,5 +11,7 @@ labelling:
   prompt_file: "data/prompts/labelling.txt"
   taxonomy_file: "data/labels.yaml"
 
+# Map of email address -> Gmail search query (null means no filter)
 emails:
-  config_file: "data/emails.json"
+  em1@gmail.com: ~
+  em2@domain.com: "-from:*@domain.com"

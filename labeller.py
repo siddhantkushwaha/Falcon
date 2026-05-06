@@ -86,8 +86,8 @@ def classify_emails(mails_processed: list[dict], config: dict = None) -> dict[st
     labelling_config = config["labelling"]
 
     client = get_llm_client(llm_config)
-    batch_size = llm_config.get("batch_size", 1)
-    body_max_chars = llm_config.get("body_max_chars", 500)
+    batch_size = llm_config["batch_size"]
+    body_max_chars = llm_config["body_max_chars"]
 
     taxonomy = load_taxonomy(labelling_config["taxonomy_file"])
     taxonomy_str = format_taxonomy_for_prompt(taxonomy)

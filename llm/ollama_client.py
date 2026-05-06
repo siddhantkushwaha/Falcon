@@ -4,7 +4,7 @@ from llm.base import LLMClient
 
 
 class OllamaLLMClient(LLMClient):
-    def __init__(self, model: str = "phi3"):
+    def __init__(self, model: str):
         super().__init__(model)
 
     def generate(self, prompt: str) -> str:

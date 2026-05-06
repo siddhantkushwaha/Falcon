@@ -8,11 +8,11 @@ def get_llm_client(config: dict) -> LLMClient:
     models = config["model"]
 
     if provider == "ollama":
-        return OllamaLLMClient(model=models.get("ollama", "phi3"))
+        return OllamaLLMClient(model=models["ollama"])
     elif provider == "google":
         return GoogleAILLMClient(
-            model=models.get("google", "gemini-2.0-flash"),
-            api_key_env=config.get("google_api_key_env", "GOOGLE_AI_API_KEY"),
+            model=models["google"],
+            api_key_env=config["google_api_key_env"],
         )
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")
