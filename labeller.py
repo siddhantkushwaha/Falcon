@@ -174,23 +174,51 @@ def _classify_batch(
     prompt_template: str,
     taxonomy_str: str,
     email_contexts: list[dict],
+    valid_labels: set[str],
+    max_retries: int,
+    retry_delay: float,
 ) -> dict[str, list[str]]:
     emails_str = _format_emails_for_prompt(email_contexts)
     prompt = prompt_template.format(taxonomy=taxonomy_str, emails=emails_str)
 
-    result = client.generate_json(prompt)
+    last_error = "unknown error"
+    for attempt in range(1, max_retries + 1):
+        try:
+            result = client.generate_json(prompt)
 
-    labels_map = {}
-    if isinstance(result, list):
-        for item in result:
-            if isinstance(item, dict) and "id" in item and "labels" in item:
-                labels_map[item["id"]] = item["labels"]
+            if result is None:
+                last_error = "JSON parse failure (result is None)"
+                raise ValueError(last_error)
 
-    for ctx in email_contexts:
-        if ctx["id"] not in labels_map:
-            labels_map[ctx["id"]] = []
+            if not isinstance(result, list):
+                last_error = f"expected list, got {type(result).__name__}"
+                raise ValueError(last_error)
 
-    return labels_map
+            labels_map = {}
+            for item in result:
+                if not isinstance(item, dict) or "id" not in item or "labels" not in item:
+                    last_error = f"malformed item in result: {item}"
+                    raise ValueError(last_error)
+                raw_labels = item["labels"] if isinstance(item["labels"], list) else []
+                validated = _validate_labels(raw_labels, valid_labels)
+                if raw_labels and not validated:
+                    last_error = f"all labels invalid for email [{item['id']}]: {raw_labels}"
+                    raise ValueError(last_error)
+                labels_map[item["id"]] = validated
+
+            for ctx in email_contexts:
+                if ctx["id"] not in labels_map:
+                    labels_map[ctx["id"]] = []
+
+            return labels_map
+
+        except Exception as e:
+            last_error = str(e)
+            util.error(f"LLM batch attempt {attempt}/{max_retries} failed: {last_error}")
+            if attempt < max_retries:
+                time.sleep(retry_delay * attempt)
+
+    raise RuntimeError(f"LLM batch failed after {max_retries} attempts: {last_error}")
 
 
 def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, list[str]]:
@@ -200,9 +228,13 @@ def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, lis
     client = get_llm_client(llm_config)
     batch_size = llm_config["batch_size"]
     body_max_chars = llm_config["body_max_chars"]
+    max_retries = llm_config.get("max_retries", 3)
+    retry_delay = llm_config.get("retry_delay", 1.0)
 
     taxonomy = _load_taxonomy(labelling_config["taxonomy_file"])
     taxonomy_str = _format_taxonomy_for_prompt(taxonomy)
+
+    valid_labels = set(taxonomy["labels"].keys())
 
     prompt_path = os.path.join(root_dir, labelling_config["prompt_file"])
     with open(prompt_path, "r") as f:
@@ -215,7 +247,11 @@ def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, lis
     all_labels = {}
     for i in range(0, len(email_contexts), batch_size):
         batch = email_contexts[i : i + batch_size]
-        all_labels.update(_classify_batch(client, prompt_template, taxonomy_str, batch))
+        all_labels.update(
+            _classify_batch(
+                client, prompt_template, taxonomy_str, batch, valid_labels, max_retries, retry_delay
+            )
+        )
 
     return all_labels
 
