@@ -1,204 +1,263 @@
 labels:
+
   personal:
-    description: "Direct person-to-person communication written by a human"
+    description: "Direct interpersonal communication intended for human conversation rather than automated workflow processing"
     attention: high
     includes:
-      - friend emails
-      - colleague requests
-      - family messages
+      - "friends or family writing personally"
+      - "coworker or collaborator asking something directly"
+      - "human-written follow-up or discussion"
+      - "manual recruiter outreach"
     excludes:
-      - automated notifications
-      - marketing emails
-      - system-generated messages
+      - "mass outreach templates"
+      - "automated platform notifications"
+      - "marketing or sales campaigns"
+      - "support ticket automation"
 
   actionable:
-    description: "Requires the recipient to take a real action or respond"
+    description: "Recipient is explicitly expected to respond, approve, confirm, review, or complete a task"
     attention: high
     includes:
-      - approvals
-      - RSVPs
-      - form submissions
-      - confirmations
-      - requests needing response
+      - "approval requests"
+      - "please respond emails"
+      - "documents needing review or signature"
+      - "deadline-sensitive requests"
+      - "meeting scheduling requiring input"
     excludes:
-      - informational notifications
-      - login alerts
-      - receipts
-      - passive updates
-    notes: "Only use when user action is genuinely expected"
-
-  security:
-    description: "Security-sensitive account events or warnings"
-    attention: high
-    includes:
-      - password resets
-      - suspicious login alerts
-      - breach notifications
-      - account recovery
-      - MFA setup alerts
-    excludes:
-      - routine login notifications
-      - generic account activity updates
-
-  government:
-    description: "Official government or regulatory communication"
-    attention: high
-    includes:
-      - tax notices
-      - regulatory compliance
-      - voting information
-      - official documents
-
-  recruitment:
-    description: "Real hiring or job application workflow communication"
-    attention: medium
-    includes:
-      - interview scheduling
-      - recruiter outreach
-      - application updates
-      - offer letters
-    excludes:
-      - hiring campaigns
-      - job advertisements
-      - career newsletters
-
-  travel:
-    description: "Actual travel bookings or itinerary-related communication"
-    attention: medium
-    includes:
-      - flight bookings
-      - hotel reservations
-      - boarding passes
-      - cancellations
-      - itinerary updates
-    excludes:
-      - travel promotions
-      - vacation ads
-      - airline discounts
-      - coupon offers
-      - coin deals
+      - "passive status updates"
+      - "FYI-only notifications"
+      - "marketing emails"
+      - "routine summaries with no expected action"
 
   otp:
-    description: "Short-lived verification or authentication codes"
-    attention: low
+    description: "One-time passwords, verification codes, authentication links, or MFA challenges"
+    attention: critical
     includes:
-      - one-time passwords
-      - verification codes
-      - login authentication codes
-    notes: "Ephemeral and time-sensitive"
+      - "login verification codes"
+      - "two-factor authentication"
+      - "password reset verification"
+      - "email verification links"
+    excludes:
+      - "security alerts without authentication flow"
+      - "general account notifications"
+
+  security:
+    description: "Security-related alerts, account protection notices, suspicious activity, or credential-sensitive communication"
+    attention: high
+    includes:
+      - "new login alerts"
+      - "password changes"
+      - "suspicious activity warnings"
+      - "account recovery notices"
+      - "security policy alerts"
+    excludes:
+      - "OTP or MFA codes"
+      - "routine marketing about security products"
 
   transaction:
-    description: "Single financial transaction events"
-    attention: low
+    description: "Confirmed financial or account-related activity involving purchases, payments, transfers, subscriptions, or receipts"
+    attention: high
     includes:
-      - payment confirmations
-      - refunds
-      - UPI transfers
-      - debit alerts
-      - credit alerts
+      - "purchase confirmations"
+      - "payment receipts"
+      - "bank transaction alerts"
+      - "subscription renewals"
+      - "refund confirmations"
     excludes:
-      - monthly statements
-      - invoices
-      - bills
+      - "monthly statements"
+      - "bills or invoices requesting payment"
+      - "marketing promotions"
 
-  statement:
-    description: "Periodic bank or credit card account summaries"
-    attention: low
+  cc-statements:
+    description: "Periodic statements specifically issued for credit card accounts"
+    attention: medium
     includes:
-      - monthly bank statements
-      - credit card statements
-      - account summaries
+      - "monthly credit card statements"
+      - "credit card account summaries"
+      - "card billing cycle statements"
+      - "credit card PDF statements"
     excludes:
-      - invoices
-      - bills
-      - payment reminders
+      - "bank account statements"
+      - "investment account statements"
+      - "loan statements"
+      - "transaction alerts"
+      - "payment reminders"
+      - "invoices or bills"
+
+  non-cc-statements:
+    description: "Periodic financial statements excluding credit card statements"
+    attention: medium
+    includes:
+      - "bank account statements"
+      - "investment account summaries"
+      - "loan account statements"
+      - "financial portfolio summaries"
+      - "monthly account reports"
+    excludes:
+      - "credit card statements"
+      - "transaction receipts"
+      - "payment reminders"
+      - "bills or invoices"
 
   billing:
-    description: "Invoices, bills, or payment due communication"
-    attention: low
+    description: "Bills, invoices, payment reminders, or requests for payment"
+    attention: high
     includes:
-      - utility bills
-      - SaaS invoices
-      - payment due notices
-      - receipts requesting payment
+      - "utility bills"
+      - "credit card payment due notices"
+      - "invoice requests"
+      - "subscription payment reminders"
+      - "overdue payment notices"
     excludes:
-      - bank statements
-      - transaction confirmations
+      - "payment confirmations"
+      - "transaction receipts"
+      - "monthly statements"
 
-  investment:
-    description: "Investment or portfolio-related updates"
-    attention: low
+  travel:
+    description: "Travel-related bookings, itineraries, check-ins, transportation updates, or lodging communication"
+    attention: medium
     includes:
-      - mutual fund updates
-      - stock alerts
-      - dividend notices
-      - portfolio summaries
-      - evoting notifications or alerts
-
-  order:
-    description: "E-commerce purchase and fulfillment communication"
-    attention: low
-    includes:
-      - order confirmations
-      - shipping updates
-      - delivery notifications
-      - returns
-
-  subscription:
-    description: "Subscription lifecycle or membership updates"
-    attention: low
-    includes:
-      - renewals
-      - plan changes
-      - membership updates
-      - trial expirations
+      - "flight bookings"
+      - "hotel reservations"
+      - "boarding passes"
+      - "ride confirmations"
+      - "travel itinerary updates"
     excludes:
-      - product marketing
-      - upsell campaigns
+      - "generic promotional travel deals"
 
-  notification:
-    description: "Automated informational activity or status updates"
-    attention: low
+  delivery:
+    description: "Shipment tracking, package delivery updates, logistics notifications, or order fulfillment progress"
+    attention: medium
     includes:
-      - app alerts
-      - login notifications
-      - reminders
-      - status changes
-      - system updates
+      - "package shipped notifications"
+      - "delivery tracking updates"
+      - "courier status changes"
+      - "out for delivery notices"
     excludes:
-      - marketing campaigns
-      - newsletters
-      - actionable requests
-
-  newsletter:
-    description: "Editorial or recurring informational content"
-    attention: low
-    includes:
-      - blog digests
-      - curated content
-      - industry roundups
-      - periodic editorial emails
-    excludes:
-      - promotional campaigns
-      - transactional updates
-
-  promotional:
-    description: "Marketing, advertising, or engagement-driving communication"
-    attention: low
-    includes:
-      - discounts
-      - coupons
-      - product launches
-      - referral campaigns
-      - sales promotions
-    notes: "Classify based on intent, not topic"
+      - "purchase receipts"
+      - "marketing emails"
 
   social:
-    description: "Social platform activity and interaction notifications"
+    description: "Automated notifications generated by social, community, collaboration, or networking platforms"
     attention: low
     includes:
-      - likes
-      - comments
-      - follows
-      - connection requests
-      - mentions
+      - "LinkedIn notifications"
+      - "Discord or Slack activity"
+      - "Instagram or Facebook notifications"
+      - "community mentions or reactions"
+    excludes:
+      - "direct personal conversation"
+      - "human-written outreach"
+
+  recruitment:
+    description: "Job opportunities, interview coordination, recruiting outreach, or hiring process communication"
+    attention: high
+    includes:
+      - "interview scheduling"
+      - "recruiter outreach"
+      - "application status updates"
+      - "offer letters"
+      - "coding assessments"
+    excludes:
+      - "internal HR announcements"
+      - "generic career newsletters"
+
+  support:
+    description: "Customer support conversations, ticket updates, issue resolutions, or helpdesk communication"
+    attention: high
+    includes:
+      - "support ticket replies"
+      - "issue resolution updates"
+      - "customer service follow-ups"
+      - "Zendesk or Jira support notifications"
+    excludes:
+      - "product marketing"
+      - "generic system notifications"
+
+  calendar:
+    description: "Meeting invitations, calendar changes, RSVPs, scheduling confirmations, or event coordination"
+    attention: high
+    includes:
+      - "calendar invites"
+      - "meeting reschedules"
+      - "event confirmations"
+      - "RSVP requests"
+    excludes:
+      - "general event promotions"
+
+  system:
+    description: "Automated infrastructure, development, monitoring, CI/CD, or operational system notifications"
+    attention: medium
+    includes:
+      - "build failures"
+      - "monitoring alerts"
+      - "GitHub Actions notifications"
+      - "server downtime alerts"
+      - "deployment notifications"
+    excludes:
+      - "human discussion threads"
+      - "marketing updates"
+
+  government:
+    description: "Official communication from government agencies, public institutions, or regulatory authorities"
+    attention: high
+    includes:
+      - "tax notices"
+      - "visa or passport communication"
+      - "court or compliance notices"
+      - "public service notifications"
+    excludes:
+      - "political campaign emails"
+      - "newsletters"
+
+  legal:
+    description: "Contracts, legal notices, compliance documents, policy agreements, or formal legal communication"
+    attention: high
+    includes:
+      - "contract review requests"
+      - "terms of service updates"
+      - "compliance notices"
+      - "legal dispute communication"
+    excludes:
+      - "routine account updates"
+
+  newsletter:
+    description: "Editorial, informational, digest-style, or recurring content primarily intended for reading rather than conversion"
+    attention: low
+    includes:
+      - "industry digests"
+      - "Substack or blog newsletters"
+      - "company update newsletters"
+      - "educational content"
+    excludes:
+      - "direct promotions"
+      - "pure sales campaigns"
+    notes:
+      - "Classify based on primary intent: informational/editorial rather than sales-oriented"
+
+  promotional:
+    description: "Marketing, advertising, sales, discounts, or conversion-oriented communication"
+    attention: bulk
+    includes:
+      - "discount offers"
+      - "sales campaigns"
+      - "coupon emails"
+      - "upsell or cross-sell promotions"
+      - "limited-time offers"
+    excludes:
+      - "editorial newsletters"
+      - "transaction receipts"
+
+  notification:
+    description: "Low-priority automated informational updates that do not require action and do not fit a more specific category"
+    attention: low
+    includes:
+      - "generic status updates"
+      - "routine account summaries"
+      - "non-critical service notifications"
+    excludes:
+      - "security alerts"
+      - "delivery tracking"
+      - "transaction confirmations"
+      - "calendar invites"
+      - "actionable requests"

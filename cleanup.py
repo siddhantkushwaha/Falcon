@@ -91,12 +91,17 @@ def cleanup(email, main_query, num_days, key):
         falcon_client, main_query, num_days
     ):
         already_processed = incremental and mail_id in processed_ids
+        existing_label_names = labeller_mod.get_label_names(
+            mail_processed, created_label_ids
+        )
+        should_relabel = "RELABEL" in existing_label_names
 
         util.log(
             f"Processing email with id [{mail_id}] and subject [{mail_processed['Subject']}]."
         )
+        util.log(existing_label_names)
 
-        if not already_processed:
+        if should_relabel or (not already_processed):
             # Phase 1: Rule-based labelling
             add_labels, remove_labels = labeller_mod.rule_labeller(
                 mail_processed, label_rules, created_label_ids
@@ -111,6 +116,8 @@ def cleanup(email, main_query, num_days, key):
             )
             add_labels.extend(llm_adds)
             remove_labels.extend(llm_removes)
+            if should_relabel:
+                remove_labels.append("RELABEL")
 
             # Phase 3: Apply label changes to Gmail
             actions.apply_label_changes(
