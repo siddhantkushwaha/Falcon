@@ -11,3 +11,4 @@ pandas
 python-dateutil
 viper-python
 git+https://github.com/siddhantkushwaha/GoogleAPIs.git#subdirectory=python
+lxml

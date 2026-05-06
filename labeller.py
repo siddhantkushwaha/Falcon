@@ -16,6 +16,7 @@ def load_config() -> dict:
 
 # --- Shared helpers ---
 
+
 def lower_strip_clean(string):
     if string is None:
         return ""
@@ -64,7 +65,10 @@ def evaluate_clause(clause, sender, subject, text, labels, tags, timediff, snipp
 
 # --- Rule labeller ---
 
-def rule_labeller(mail_processed, label_rules, label_id_to_name_mapping) -> tuple[list, list]:
+
+def rule_labeller(
+    mail_processed, label_rules, label_id_to_name_mapping
+) -> tuple[list, list]:
     """Apply rule-based label operations. Returns (add_label_names, remove_label_names)."""
     curr_time = int(time.time())
 
@@ -94,7 +98,9 @@ def rule_labeller(mail_processed, label_rules, label_id_to_name_mapping) -> tupl
                     add_labels.append(label_name)
             elif label_op_type == "-":
                 if label_name in labels:
-                    util.log(f"Remove label [{label_name}] since [{q}] evaluates to True.")
+                    util.log(
+                        f"Remove label [{label_name}] since [{q}] evaluates to True."
+                    )
                     labels.remove(label_name)
                     remove_labels.append(label_name)
             else:
@@ -108,6 +114,7 @@ def rule_labeller(mail_processed, label_rules, label_id_to_name_mapping) -> tupl
 
 
 # --- LLM labeller ---
+
 
 def _load_taxonomy(taxonomy_path: str) -> dict:
     with open(os.path.join(root_dir, taxonomy_path), "r") as f:
@@ -188,7 +195,9 @@ def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, lis
     with open(prompt_path, "r") as f:
         prompt_template = f.read()
 
-    email_contexts = [_prepare_email_context(m, body_max_chars) for m in mails_processed]
+    email_contexts = [
+        _prepare_email_context(m, body_max_chars) for m in mails_processed
+    ]
 
     all_labels = {}
     for i in range(0, len(email_contexts), batch_size):

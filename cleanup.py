@@ -58,7 +58,9 @@ def cleanup(email, main_query, num_days, key):
             last_run_utc = last_run.astimezone(timezone.utc)
             now_utc = datetime.now(tz=timezone.utc)
             num_days = (now_utc - last_run_utc).total_seconds() / 86400
-            util.log(f"Incremental mode: fetching emails since {last_run.isoformat()} ({num_days:.4f} days).")
+            util.log(
+                f"Incremental mode: fetching emails since {last_run.isoformat()} ({num_days:.4f} days)."
+            )
 
     config = labeller_mod.load_config()
     db = get_db()
@@ -102,10 +104,14 @@ def cleanup(email, main_query, num_days, key):
             mail_dt_utc = mail_dt.astimezone(timezone.utc)
             last_run_utc = last_run.astimezone(timezone.utc)
             if mail_dt_utc <= last_run_utc:
-                util.log(f"Skipping already-processed email [{mail_id}] from {mail_dt.isoformat()}.")
+                util.log(
+                    f"Skipping already-processed email [{mail_id}] from {mail_dt.isoformat()}."
+                )
                 continue
 
-        util.log(f"Processing email with id [{mail_id}] and subject [{mail_processed['Subject']}].")
+        util.log(
+            f"Processing email with id [{mail_id}] and subject [{mail_processed['Subject']}]."
+        )
 
         # Phase 1: Rule-based labelling
         add_labels, remove_labels = labeller_mod.rule_labeller(

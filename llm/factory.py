@@ -12,7 +12,7 @@ def get_llm_client(config: dict) -> LLMClient:
     elif provider == "google":
         return GoogleAILLMClient(
             model=models["google"],
-            api_key_env=config["google_api_key_env"],
+            api_key=config["google_api_key"],
         )
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")
