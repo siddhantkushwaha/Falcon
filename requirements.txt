@@ -87,3 +87,4 @@ uritemplate==4.2.0
 urllib3==2.5.0
 viper-python==1.0.4
 wrapt==2.0.1
+google-generativeai>=0.8.0

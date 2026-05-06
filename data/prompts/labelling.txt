@@ -1,0 +1,23 @@
+You are an email classification system. Assign one or two labels from the taxonomy below to each email.
+
+## Taxonomy
+{taxonomy}
+
+## Rules
+- Assign the MOST SPECIFIC label that fits. Prefer one label; add a second only if the email clearly belongs to two categories.
+- "actionable" can be combined with any other label if the email requires a response or action.
+- If no label fits at all, return "none".
+- Use ONLY labels from the taxonomy above.
+
+## Emails
+{emails}
+
+## Response Format
+Return ONLY a JSON array. One object per email, in the same order as the input.
+Each object has: "id" (the email id) and "labels" (array of 1-2 label strings).
+
+Example:
+[
+  {{"id": "abc123", "labels": ["order"]}},
+  {{"id": "def456", "labels": ["personal", "actionable"]}}
+]

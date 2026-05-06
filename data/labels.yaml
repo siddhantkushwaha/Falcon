@@ -1,0 +1,67 @@
+labels:
+  personal:
+    description: "Direct human-to-human email, not automated"
+    attention: high
+    examples: "friend writing, colleague asking something, family"
+
+  actionable:
+    description: "Requires a response or action from the recipient"
+    attention: high
+    examples: "approval requests, RSVPs, questions needing answers, form submissions"
+
+  security:
+    description: "Security alerts, password resets, breach notifications, suspicious activity"
+    attention: high
+
+  government:
+    description: "Tax notices, voting, official documents, regulatory compliance"
+    attention: high
+
+  recruitment:
+    description: "Job offers, interview scheduling, application updates"
+    attention: medium
+
+  travel:
+    description: "Flight/hotel/train bookings, boarding passes, itineraries, cancellations"
+    attention: medium
+
+  otp:
+    description: "One-time passwords, 2FA codes, login verification codes"
+    attention: low
+    notes: "Ephemeral — only useful for a few minutes"
+
+  transaction:
+    description: "Payment confirmations, UPI transfers, debits, credits, refunds"
+    attention: low
+
+  statement:
+    description: "Bank statements, credit card statements, bills, invoices"
+    attention: low
+
+  investment:
+    description: "Portfolio updates, mutual fund NAV, dividends, stock alerts"
+    attention: low
+
+  order:
+    description: "Purchase confirmations, shipping updates, delivery, returns"
+    attention: low
+
+  subscription:
+    description: "SaaS renewals, plan changes, trial expiry, membership"
+    attention: low
+
+  notification:
+    description: "App alerts, activity updates, reminders — automated non-marketing"
+    attention: low
+
+  newsletter:
+    description: "Digests, blog roundups, content emails, periodic updates"
+    attention: low
+
+  promotional:
+    description: "Sales, discounts, marketing campaigns, product launches"
+    attention: low
+
+  social:
+    description: "Social media notifications, connection requests, likes, comments"
+    attention: low

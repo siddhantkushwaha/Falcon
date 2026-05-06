@@ -1,0 +1,15 @@
+llm:
+  provider: "ollama"  # "ollama" or "google"
+  model:
+    ollama: "phi3"
+    google: "gemini-2.0-flash"
+  batch_size: 1  # emails per LLM call (1-3)
+  body_max_chars: 500  # truncated plaintext body length
+  google_api_key_env: "GOOGLE_AI_API_KEY"  # env var name holding the key
+
+labelling:
+  prompt_file: "data/prompts/labelling.txt"
+  taxonomy_file: "data/labels.yaml"
+
+emails:
+  config_file: "data/emails.json"
