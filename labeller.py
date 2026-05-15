@@ -210,11 +210,12 @@ def _classify_batch(
                         f"all labels invalid for email [{item['id']}]: {raw_labels}"
                     )
                     raise ValueError(last_error)
-                labels_map[item["id"]] = validated
+                reason = item.get("reason", "")
+                labels_map[item["id"]] = (validated, reason)
 
             for ctx in email_contexts:
                 if ctx["id"] not in labels_map:
-                    labels_map[ctx["id"]] = []
+                    labels_map[ctx["id"]] = ([], "")
 
             return labels_map
 
@@ -229,7 +230,7 @@ def _classify_batch(
     raise RuntimeError(f"LLM batch failed after {max_retries} attempts: {last_error}")
 
 
-def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, list[str]]:
+def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, tuple[list[str], str]]:
     llm_config = config["llm"]
     labelling_config = config["labelling"]
 
@@ -273,7 +274,10 @@ def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, lis
 def llm_labeller(mail_processed, config, label_id_to_name_mapping) -> tuple[list, list]:
     """Run LLM classification and return (add_label_names, remove_label_names) for AI/* labels."""
     batch_labels = _classify_emails([mail_processed], config)
-    llm_labels = batch_labels.get(mail_processed["Id"], [])
+    llm_labels, reason = batch_labels.get(mail_processed["Id"], ([], ""))
+
+    if llm_labels:
+        util.log(f"LLM labels for [{mail_processed['Id']}]: {llm_labels} — {reason}")
 
     current_labels = get_label_names(mail_processed, label_id_to_name_mapping)
     expected_ai_labels = {f"AI/{l}".upper() for l in llm_labels}
