@@ -1,33 +1,20 @@
 labels:
 
   personal:
-    description: "Direct interpersonal communication intended for human conversation rather than automated workflow processing"
+    description: "A human wrote this specifically to you for conversation, not as part of a hiring process, support interaction, or automated workflow. The primary purpose is the human conversation itself."
     attention: high
     includes:
       - "friends or family writing personally"
       - "coworker or collaborator asking something directly"
       - "human-written follow-up or discussion"
-      - "manual recruiter outreach"
     excludes:
+      - "recruiter outreach about a role (use recruitment)"
+      - "support agent replies, even if personalized (use support)"
+      - "messages that are primarily calendar invites (use calendar)"
+      - "automated travel or booking confirmations (use travel)"
       - "mass outreach templates"
       - "automated platform notifications"
       - "marketing or sales campaigns"
-      - "support ticket automation"
-
-  actionable:
-    description: "Recipient is explicitly expected to respond, approve, confirm, review, or complete a task"
-    attention: high
-    includes:
-      - "approval requests"
-      - "please respond emails"
-      - "documents needing review or signature"
-      - "deadline-sensitive requests"
-      - "meeting scheduling requiring input"
-    excludes:
-      - "passive status updates"
-      - "FYI-only notifications"
-      - "marketing emails"
-      - "routine summaries with no expected action"
 
   otp:
     description: "One-time passwords, verification codes, authentication links, or MFA challenges"
@@ -42,7 +29,7 @@ labels:
       - "general account notifications"
 
   security:
-    description: "Security-related alerts, account protection notices, suspicious activity, or credential-sensitive communication"
+    description: "Security-related alerts about account protection, suspicious activity, or credential changes. The email warns about a security event. Wins over social/system when the event is security-specific."
     attention: high
     includes:
       - "new login alerts"
@@ -50,26 +37,31 @@ labels:
       - "suspicious activity warnings"
       - "account recovery notices"
       - "security policy alerts"
+      - "suspicious login to any platform, including social or cloud consoles"
     excludes:
-      - "OTP or MFA codes"
-      - "routine marketing about security products"
+      - "OTP or MFA codes (use otp)"
+      - "routine account setting changes like email preferences"
+      - "infrastructure monitoring alerts without security implications (use system)"
+      - "routine marketing about security products (use promotional)"
 
   transaction:
-    description: "Confirmed financial or account-related activity involving purchases, payments, transfers, subscriptions, or receipts"
+    description: "Transient payment confirmations: the email confirms money already moved. NOT invoices or bills — those are long-term records."
     attention: high
     includes:
-      - "purchase confirmations"
       - "payment receipts"
-      - "bank transaction alerts"
-      - "subscription renewals"
+      - "bank transaction alerts (debit/credit)"
       - "refund confirmations"
+      - "wire or UPI transfer confirmations"
     excludes:
+      - "invoices or bills, even for completed purchases (use billing)"
+      - "order placement confirmations (use order)"
+      - "subscription lifecycle events (use subscription)"
+      - "investment trade confirmations (use investment)"
       - "monthly statements"
-      - "bills or invoices requesting payment"
       - "marketing promotions"
 
   cc-statements:
-    description: "Periodic statements specifically issued for credit card accounts"
+    description: "Periodic statements specifically issued for credit card accounts — the full monthly statement document, not a payment reminder."
     attention: medium
     includes:
       - "monthly credit card statements"
@@ -77,44 +69,44 @@ labels:
       - "card billing cycle statements"
       - "credit card PDF statements"
     excludes:
-      - "bank account statements"
-      - "investment account statements"
-      - "loan statements"
-      - "transaction alerts"
-      - "payment reminders"
-      - "invoices or bills"
+      - "credit card payment due reminders (use billing)"
+      - "bank account statements (use non-cc-statements)"
+      - "investment account statements (use non-cc-statements)"
+      - "loan statements (use non-cc-statements)"
+      - "transaction alerts (use transaction)"
 
   non-cc-statements:
-    description: "Periodic financial statements excluding credit card statements"
+    description: "Periodic financial statements excluding credit card statements — scheduled summaries of account balances or activity, not real-time alerts or invoices"
     attention: medium
     includes:
       - "bank account statements"
-      - "investment account summaries"
       - "loan account statements"
-      - "financial portfolio summaries"
       - "monthly account reports"
+      - "cloud service usage reports (e.g. AWS monthly report)"
     excludes:
-      - "credit card statements"
+      - "credit card statements (use cc-statements)"
+      - "investment activity alerts (use investment)"
+      - "infrastructure or system alerts (use system)"
+      - "bills or invoices requesting payment (use billing)"
       - "transaction receipts"
-      - "payment reminders"
-      - "bills or invoices"
 
   billing:
-    description: "Bills, invoices, payment reminders, or requests for payment"
+    description: "Invoices, bills, or payment-due notices — formal financial documents worth keeping as records, whether or not payment has been made."
     attention: high
     includes:
+      - "invoices (including for already-completed purchases)"
       - "utility bills"
       - "credit card payment due notices"
-      - "invoice requests"
-      - "subscription payment reminders"
       - "overdue payment notices"
     excludes:
-      - "payment confirmations"
-      - "transaction receipts"
+      - "payment confirmations (use transaction)"
+      - "subscription renewal confirmations (use subscription)"
+      - "auto-renewal reminders without amount due (use subscription)"
+      - "tax bills or government invoices (use government)"
       - "monthly statements"
 
   travel:
-    description: "Travel-related bookings, itineraries, check-ins, transportation updates, or lodging communication"
+    description: "Travel-related bookings, itineraries, check-ins, transportation updates, or lodging communication. Wins over order/transaction/billing/calendar when the email is primarily about a trip."
     attention: medium
     includes:
       - "flight bookings"
@@ -122,121 +114,190 @@ labels:
       - "boarding passes"
       - "ride confirmations"
       - "travel itinerary updates"
+      - "flight or trip reminders"
     excludes:
-      - "generic promotional travel deals"
+      - "generic promotional travel deals (use promotional)"
+      - "payment-only confirmations with no trip details (use transaction)"
+      - "hotel or airline invoices with no booking context (use billing)"
+
+  order:
+    description: "Order lifecycle: placement, processing, cancellation. Covers the period between placing an order and it being shipped. NOT for travel bookings or subscriptions."
+    attention: medium
+    includes:
+      - "order placed confirmations"
+      - "order summary emails"
+      - "order cancellation notices"
+      - "order processing or preparing updates"
+      - "first-time subscription product purchases (e.g. Amazon Subscribe & Save initial order)"
+    excludes:
+      - "travel bookings or reservations (use travel)"
+      - "subscription renewals or plan changes (use subscription)"
+      - "payment receipts (use transaction)"
+      - "order invoices or formal billing documents (use billing)"
+      - "shipped or in-transit tracking (use delivery)"
+      - "promotional offers or deals"
+
+  subscription:
+    description: "Subscription lifecycle: renewals, plan changes, trials, cancellations. About the subscription status changing, not about money owed or money charged."
+    attention: medium
+    includes:
+      - "subscription renewal confirmations"
+      - "trial expiry or upgrade notices"
+      - "plan change confirmations"
+      - "cancellation confirmations"
+      - "auto-renewal reminders (even if they mention the price)"
+    excludes:
+      - "first-time purchase of a subscribable product (use order)"
+      - "payment-due notices for subscriptions (use billing)"
+      - "payment receipts for subscription charges (use transaction)"
+      - "shipment tracking for subscription items (use delivery)"
+      - "promotional upsell campaigns"
+      - "generic tier-status notifications with no actual change"
+
+  investment:
+    description: "Real-time investment activity: trade executions, portfolio alerts, dividend notices. Wins over transaction when the event is investment-specific."
+    attention: medium
+    includes:
+      - "stock or fund trade confirmations"
+      - "portfolio performance alerts"
+      - "dividend payment notices (even though money moved, the context is investment)"
+      - "investment account activity alerts"
+    excludes:
+      - "periodic portfolio or account statements (use non-cc-statements)"
+      - "marketing for investment products"
+      - "generic financial newsletters"
 
   delivery:
-    description: "Shipment tracking, package delivery updates, logistics notifications, or order fulfillment progress"
+    description: "In-transit and delivery tracking: from shipped to delivered. Starts when a carrier has the package."
     attention: medium
     includes:
       - "package shipped notifications"
       - "delivery tracking updates"
       - "courier status changes"
       - "out for delivery notices"
+      - "delivered confirmations"
     excludes:
-      - "purchase receipts"
+      - "order placed or processing (use order)"
+      - "return received or refund processed (use transaction)"
+      - "purchase receipts (use transaction)"
       - "marketing emails"
 
   social:
-    description: "Automated notifications generated by social, community, collaboration, or networking platforms"
+    description: "Automated notifications from a recognizable social or community platform (LinkedIn, Discord, Instagram, etc.). The sender must be the platform itself, not a human using the platform. Use only for real-time activity notifications, not digests."
     attention: low
     includes:
       - "LinkedIn notifications"
       - "Discord or Slack activity"
       - "Instagram or Facebook notifications"
       - "community mentions or reactions"
+      - "LinkedIn job alerts"
     excludes:
-      - "direct personal conversation"
-      - "human-written outreach"
+      - "direct personal conversation (use personal)"
+      - "genuine recruiter outreach via LinkedIn (use recruitment)"
+      - "LinkedIn Premium or platform upsells (use promotional)"
+      - "GitHub PR comments or reviews (use system)"
+      - "platform security alerts like 'suspicious login to Instagram' (use security)"
+      - "Discord or platform event invites that are primarily scheduling (use calendar)"
+      - "weekly or monthly platform digests (use newsletter)"
 
   recruitment:
-    description: "Job opportunities, interview coordination, recruiting outreach, or hiring process communication"
+    description: "Genuine personal recruiter outreach or active hiring process communication directed specifically at the recipient. Wins over calendar/personal when the context is hiring."
     attention: high
     includes:
-      - "interview scheduling"
-      - "recruiter outreach"
-      - "application status updates"
+      - "a recruiter writing specifically to you about a role"
+      - "interview scheduling (even if it includes a calendar invite)"
       - "offer letters"
-      - "coding assessments"
+      - "coding assessment invitations"
     excludes:
+      - "job board notifications (someone viewed your profile, new jobs for you)"
+      - "mass recruiter templates or bulk outreach"
+      - "generic career newsletters (use newsletter)"
+      - "LinkedIn job alerts (use social)"
+      - "LinkedIn Premium upsells (use promotional)"
       - "internal HR announcements"
-      - "generic career newsletters"
 
   support:
-    description: "Customer support conversations, ticket updates, issue resolutions, or helpdesk communication"
-    attention: high
+    description: "Customer support conversations, ticket updates, or issue resolutions where you are a customer seeking help. Wins over calendar/personal when the context is a support interaction."
+    attention: medium
     includes:
       - "support ticket replies"
       - "issue resolution updates"
-      - "customer service follow-ups"
-      - "Zendesk or Jira support notifications"
+      - "customer service follow-ups (even if personalized)"
+      - "support community or forum replies to your question"
     excludes:
+      - "developer/ops tool notifications like Jira, PagerDuty (use system)"
+      - "support call scheduling with no ticket context (use calendar)"
       - "product marketing"
-      - "generic system notifications"
 
   calendar:
-    description: "Meeting invitations, calendar changes, RSVPs, scheduling confirmations, or event coordination"
-    attention: high
+    description: "Meeting invitations, calendar changes, RSVPs, or scheduling confirmations. Use only when the email is primarily about scheduling, not when a calendar invite is incidental to another category."
+    attention: medium
     includes:
-      - "calendar invites"
+      - "calendar invites for meetings or calls"
       - "meeting reschedules"
       - "event confirmations"
       - "RSVP requests"
     excludes:
-      - "general event promotions"
+      - "interview scheduling (use recruitment)"
+      - "flight or trip reminders (use travel)"
+      - "visa or government appointments (use government)"
+      - "support call scheduling (use support)"
+      - "scheduled maintenance windows (use system)"
+      - "general event promotions (use promotional)"
+      - "Discord or platform event invites (use social)"
 
   system:
-    description: "Automated infrastructure, development, monitoring, CI/CD, or operational system notifications"
+    description: "Automated infrastructure, development, monitoring, CI/CD, or operational system notifications from developer/ops tools. About system events, not account or subscription management."
     attention: medium
     includes:
       - "build failures"
       - "monitoring alerts"
       - "GitHub Actions notifications"
+      - "GitHub PR comments and reviews"
       - "server downtime alerts"
       - "deployment notifications"
+      - "Jira or PagerDuty notifications"
+      - "scheduled maintenance window notices"
     excludes:
-      - "human discussion threads"
+      - "SaaS plan renewals or subscription changes (use subscription)"
+      - "customer support tickets where you are the customer (use support)"
+      - "security alerts about account compromise (use security)"
+      - "GitHub changelog or product newsletters (use newsletter)"
+      - "human discussion threads (use personal)"
       - "marketing updates"
 
   government:
-    description: "Official communication from government agencies, public institutions, or regulatory authorities"
+    description: "Official communication from government agencies, public institutions, or regulatory authorities. Government origin wins over billing/calendar/other categories."
     attention: high
     includes:
-      - "tax notices"
+      - "tax notices (including tax bills)"
       - "visa or passport communication"
+      - "government appointment scheduling"
       - "court or compliance notices"
       - "public service notifications"
     excludes:
-      - "political campaign emails"
-      - "newsletters"
-
-  legal:
-    description: "Contracts, legal notices, compliance documents, policy agreements, or formal legal communication"
-    attention: high
-    includes:
-      - "contract review requests"
-      - "terms of service updates"
-      - "compliance notices"
-      - "legal dispute communication"
-    excludes:
-      - "routine account updates"
+      - "political campaign emails (use promotional)"
+      - "government newsletters or public health bulletins (use newsletter)"
 
   newsletter:
-    description: "Editorial, informational, digest-style, or recurring content primarily intended for reading rather than conversion"
+    description: "Editorial, informational, or digest-style recurring content. The primary intent is to inform or educate, not to sell."
     attention: low
     includes:
       - "industry digests"
       - "Substack or blog newsletters"
       - "company update newsletters"
       - "educational content"
+      - "weekly job digests from job boards"
+      - "GitHub changelog or product update roundups"
+      - "government public health or informational bulletins"
+      - "weekly or monthly platform digests (LinkedIn, Reddit, etc.)"
     excludes:
-      - "direct promotions"
-      - "pure sales campaigns"
-    notes:
-      - "Classify based on primary intent: informational/editorial rather than sales-oriented"
+      - "emails whose primary purpose is selling or discounting (use promotional)"
+      - "newsletters that are mostly discount codes or product pushes (use promotional)"
+      - "real-time social platform notifications (use social)"
 
   promotional:
-    description: "Marketing, advertising, sales, discounts, or conversion-oriented communication"
+    description: "Marketing, advertising, sales, discounts, or conversion-oriented communication. The primary intent is to get you to buy or upgrade something."
     attention: bulk
     includes:
       - "discount offers"
@@ -244,20 +305,10 @@ labels:
       - "coupon emails"
       - "upsell or cross-sell promotions"
       - "limited-time offers"
+      - "platform upgrade upsells (e.g. LinkedIn Premium)"
+      - "political campaign emails"
     excludes:
-      - "editorial newsletters"
+      - "informational newsletters with minor promotional footers (use newsletter)"
+      - "subscription renewal or plan change confirmations (use subscription)"
       - "transaction receipts"
 
-  notification:
-    description: "Low-priority automated informational updates that do not require action and do not fit a more specific category"
-    attention: low
-    includes:
-      - "generic status updates"
-      - "routine account summaries"
-      - "non-critical service notifications"
-    excludes:
-      - "security alerts"
-      - "delivery tracking"
-      - "transaction confirmations"
-      - "calendar invites"
-      - "actionable requests"

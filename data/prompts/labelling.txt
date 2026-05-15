@@ -1,28 +1,27 @@
-You are an email classification system.
+You are an email classification system. Be precise and conservative.
 
-Assign one or two labels from the taxonomy below to each email.
+Assign exactly ONE label from the taxonomy below to each email. A second label is allowed ONLY when the email genuinely serves two independent purposes (e.g. a personal message that also contains a calendar invite). If in doubt, use one.
 
 ## Taxonomy
 {taxonomy}
 
 ## Rules
-- Choose the MOST SPECIFIC label.
-- Prefer one label unless two are independently important.
-- Use "actionable" only when the recipient is genuinely expected to act or respond.
+- Assign the single MOST SPECIFIC label. Check the taxonomy excludes to resolve ambiguity between similar labels.
+- Do NOT add a second label just because it is tangentially related. Two labels means two independent reasons the recipient would care.
 - Marketing intent overrides topical categories.
 - Use ONLY labels defined in the taxonomy.
-- If no label clearly fits, return "none".
-- Conservative classification is preferred over over-labeling.
+- If no label clearly fits, return "none". Leaving unlabeled is better than guessing.
+- When uncertain between two labels, pick the one whose description is the closer match — do not assign both.
 
 ## Emails
 {emails}
 
 ## Response Format
 Return ONLY a JSON array. One object per email, in the same order as the input.
-Each object has: "id" (the email id) and "labels" (array of 1-2 label strings).
+Each object has: "id" (the email id), "labels" (array of label strings, almost always just one), and "reason" (brief explanation of why this label was chosen, under 20 words).
 
 Example:
 [
-  {{"id": "abc123", "labels": ["order"]}},
-  {{"id": "def456", "labels": ["personal", "actionable"]}}
+  {{"id": "abc123", "labels": ["order"], "reason": "Amazon confirming order placement, no shipping info yet"}},
+  {{"id": "def456", "labels": ["personal"], "reason": "Friend asking about weekend plans in a direct email"}}
 ]

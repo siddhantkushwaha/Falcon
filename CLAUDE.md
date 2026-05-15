@@ -67,7 +67,7 @@ cleanup.py → fetch (falcon.py) → for each email:
 
 **Data files:**
 - `config/config.yaml` — Runtime config (not committed; copy from `config/config.example.yaml`). Contains LLM settings (`llm:`), pipeline timing (`pipeline:`), and the `emails` map (account → Gmail query).
-- `data/labels.yaml` — LLM label taxonomy (17 categories with descriptions and attention tiers). Used at runtime to validate LLM output.
+- `data/labels.yaml` — LLM label taxonomy (20 categories with descriptions and attention tiers). Used at runtime to validate LLM output.
 - `data/prompts/labelling.txt` — LLM prompt template with `{taxonomy}` and `{emails}` placeholders.
 - `data/rules.csv` — Rule definitions (type, query, order, apply_to, args).
 - `data/history_ids.json` — Per-account sets of processed message IDs (auto-generated; used by incremental mode).
