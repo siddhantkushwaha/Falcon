@@ -31,29 +31,21 @@ def update_rules_from_csv():
     db = get_db()
     df = pd.read_csv(csv_file_path)
 
+    db.session.query(Rule).delete()
+
     for i, row in df.iterrows():
-
-        r_id = row["id"]
-        r_type = row["type"]
-        query = row["query"]
-        apply_to = row["apply_to"]
-        order = row["order"]
         r_args = row["args"]
-
         if r_args is not None and len(str(r_args).strip()) == 0:
             r_args = None
 
-        rule_obj = db.session.query(Rule).filter_by(id=r_id).first()
-
-        if rule_obj is None:
-            rule_obj = Rule(id=r_id)
-
-        rule_obj.type = r_type
-        rule_obj.query = query
-        rule_obj.apply_to = apply_to
-        rule_obj.order = order
-        rule_obj.args = r_args
-
+        rule_obj = Rule(
+            id=row["id"],
+            type=row["type"],
+            query=row["query"],
+            apply_to=row["apply_to"],
+            order=row["order"],
+            args=r_args,
+        )
         db.session.add(rule_obj)
 
     db.session.commit()

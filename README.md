@@ -91,34 +91,18 @@ python cleanup.py --days 2 --key mypassphrase
 
 ## LLM classification
 
-LLM classification runs unconditionally on every email. Each email is classified against the label taxonomy in `data/labels.yaml`. Results are applied as nested Gmail labels under `AI/` (e.g. `AI/PERSONAL`, `AI/PROMOTIONAL`). Existing `AI/` labels that no longer match are removed.
-
-Configure the provider in `config/config.yaml`:
-
-```yaml
-llm:
-  provider: "ollama"   # or "google"
-  model:
-    ollama: "phi3"
-    google: "gemini-2.0-flash"
-  batch_size: 1         # emails per LLM call
-  body_max_chars: 500   # truncate body to this length
-  google_api_key: ""    # Google AI API key
-  max_retries: 3        # retry attempts on failure
-  retry_delay: 2.0      # base delay in seconds (multiplied by attempt number)
-```
+LLM classification runs unconditionally on every email. Each email is classified against the 20-label taxonomy in [`data/labels.yaml`](data/labels.yaml). The LLM returns exactly one label (rarely two) plus a brief reason string for auditability. Results are applied as nested Gmail labels under `AI/` (e.g. `AI/PERSONAL`, `AI/PROMOTIONAL`). Existing `AI/` labels that no longer match are removed.
 
 Labels returned by the LLM are validated against the taxonomy. Invalid or hallucinated labels are dropped with a warning. If all retry attempts fail (network error, JSON parse failure, malformed response, or all-invalid labels), the pipeline aborts with an error.
 
 ## Rules
 
-Rules live in `data/rules.csv` (synced to SQLite via `manage.py`). Each rule is a Python expression evaluated in email context.
+Rules live in `data/rules.csv` (synced to SQLite via `manage.py`). Each rule is a Python expression evaluated in email context. See [`data/rules_sample.csv`](data/rules_sample.csv) for the full default ruleset.
 
 **Rule types:**
-- `blacklist` — move to trash if expression is true
-- `whitelist` — never trash (overrides blacklist)
-- `label:+<NAME>` — add label
-- `label:-<NAME>` — remove label
+- `whitelist` — never trash (overrides blacklist). Evaluated first.
+- `label:+<NAME>` / `label:-<NAME>` — add or remove a Gmail label
+- `blacklist` — move to trash if expression is true (unless whitelisted)
 
 **Context variables available in expressions:**
 
@@ -131,16 +115,30 @@ Rules live in `data/rules.csv` (synced to SQLite via `manage.py`). Each rule is 
 | `timediff` | Age of email in seconds |
 | `minute`, `hour`, `day`, `week`, `month`, `year` | Time constants |
 
-**Example rules:**
+### Per-label policy
 
-```
-whitelist  → 'starred' in labels
-label:+unsubscribe → 'unsubscribe' in tags
-label:-important → True
-blacklist  → timediff > day and 'unsubscribe' in labels and not any(i in labels for i in ['ai/actionable', 'ai/personal'])
-```
-
-The blacklist rule above protects emails the LLM flagged as personal or actionable, even if they have an unsubscribe header.
+| Label | Mark read | Archive after | Trash after |
+|---|---|---|---|
+| personal | — | — | whitelist |
+| otp | yes | — | 1d |
+| security | yes | 1d | 7d |
+| transaction | yes | 1d | 90d |
+| cc-statements | yes | 1d | — |
+| non-cc-statements | yes | 1d | — |
+| billing | — | 1d | — |
+| travel | — | 1d | — |
+| order | yes | 30d | 90d |
+| subscription | yes | 1d | — |
+| investment | yes | 1d | 30d |
+| delivery | yes | 30d | 90d |
+| social | yes | — | 1d |
+| recruitment | — | — | — |
+| support | — | 1d | 7d |
+| system | yes | 1d | 7d |
+| calendar | — | — | — |
+| government | — | 1d | — |
+| newsletter | yes | — | 1d |
+| promotional | yes | — | 1d |
 
 ## File structure
 
@@ -159,7 +157,8 @@ The blacklist rule above protects emails the LLM flagged as personal or actionab
 | `util.py` | Logging and text utilities |
 | `config/config.yaml` | Runtime config (not committed — copy from example) |
 | `config/config.example.yaml` | Config template |
-| `data/labels.yaml` | LLM label taxonomy |
+| `data/labels.yaml` | LLM label taxonomy (20 labels with cross-references) |
+| `data/label_policy.csv` | Per-label policy summary (mark-read, archive, trash thresholds) |
 | `data/prompts/labelling.txt` | LLM prompt template |
 | `data/rules.csv` | Rule definitions (edit this, then run manage.py) |
 | `data/history_ids.json` | Processed email IDs for incremental mode (auto-generated) |
