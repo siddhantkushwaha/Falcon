@@ -26,7 +26,7 @@ def update_rules_from_csv():
     if not os.path.exists(csv_file_path):
         return
 
-    util.log(f"Reading rules to: [{csv_file_path}]")
+    util.log(f"Reading rules from: [{csv_file_path}]")
 
     db = get_db()
     df = pd.read_csv(csv_file_path)
