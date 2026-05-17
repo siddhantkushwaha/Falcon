@@ -158,14 +158,18 @@ def _format_emails_for_prompt(email_contexts: list[dict]) -> str:
 
 def _validate_labels(labels: list[str], valid_labels: set[str]) -> list[str]:
     result = []
+    has_non_none = False
     for label in labels:
         normalized = label.strip().lower()
         if normalized == "none":
             continue
+        has_non_none = True
         if normalized in valid_labels:
             result.append(normalized)
         else:
             util.log(f"LLM returned invalid label [{label}], dropping.")
+    if has_non_none and not result:
+        raise ValueError(f"all labels invalid: {labels}")
     return result
 
 
@@ -204,8 +208,9 @@ def _classify_batch(
                     last_error = f"malformed item in result: {item}"
                     raise ValueError(last_error)
                 raw_labels = item["labels"] if isinstance(item["labels"], list) else []
-                validated = _validate_labels(raw_labels, valid_labels)
-                if raw_labels and not validated:
+                try:
+                    validated = _validate_labels(raw_labels, valid_labels)
+                except ValueError:
                     last_error = (
                         f"all labels invalid for email [{item['id']}]: {raw_labels}"
                     )
@@ -230,7 +235,9 @@ def _classify_batch(
     raise RuntimeError(f"LLM batch failed after {max_retries} attempts: {last_error}")
 
 
-def _classify_emails(mails_processed: list[dict], config: dict) -> dict[str, tuple[list[str], str]]:
+def _classify_emails(
+    mails_processed: list[dict], config: dict
+) -> dict[str, tuple[list[str], str]]:
     llm_config = config["llm"]
     labelling_config = config["labelling"]
 

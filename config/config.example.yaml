@@ -1,24 +1,24 @@
 llm:
-  provider: "ollama"  # "ollama" or "google"
+  provider: "google"
   model:
-    ollama: "phi3"
-    google: "gemini-2.0-flash"
+    ollama: "gemma4:e4b"
+    google: "gemma-4-26b-a4b-it"
   ollama_host: "http://localhost:11434"
   batch_size: 1
   body_max_chars: 500  # truncated plaintext body length
   google_api_key: ""
-  max_retries: 3
-  retry_delay: 2.0  # seconds; multiplied by attempt number
+  max_retries: 10
+  retry_delay: 30.0  # seconds; multiplied by attempt number
 
 labelling:
   prompt_file: "data/prompts/labelling.txt"
   taxonomy_file: "data/labels.yaml"
 
 pipeline:
-  sleep_after_label: 0     # seconds between phase 3 (label apply) and phase 4 (delete eval)
+  sleep_after_label: 20     # seconds between phase 3 (label apply) and phase 4 (delete eval)
   sleep_between_emails: 0.5  # seconds between each email in the pipeline loop
 
 # Map of email address -> Gmail search query (null means no filter)
 emails:
-  em1@gmail.com: ~
-  em2@domain.com: "-from:*@domain.com"
+  k16.siddhant@gmail.com: ~
+  isiddhant.k@gmail.com: ~
